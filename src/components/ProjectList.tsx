@@ -9,11 +9,17 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
 import EditProject from "./EditProject";
+import type { Project } from "@/types";
 
-export default function ProjectList({ projects, setProjects }) {
+type PropsType = {
+  setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
+  projects: Project[];
+};
+
+export default function ProjectList({ projects, setProjects }: PropsType) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {projects.map((project) => (
+      {projects.map((project:Project) => (
         <Card key={project.id}>
           <CardHeader>
             <CardTitle className="flex justify-between gap-1">
@@ -40,7 +46,7 @@ export default function ProjectList({ projects, setProjects }) {
                 Created: {new Date(project.created_at).toLocaleDateString()}
               </span>
               <span>
-                Due: {new Date(project.estimation_date).toLocaleDateString()}
+                Due: {project.estimation_date ? new Date(project.estimation_date).toLocaleDateString() : "N/A"}
               </span>
             </div>
           </CardFooter>

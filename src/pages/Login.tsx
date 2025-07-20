@@ -16,19 +16,47 @@ import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false)
+  const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
-    const { data, error } = await signIn(email, password);
+  function validateEmail(email: string) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
 
-    if (error) {
-      alert(error.message);
-    } else {
-      alert("Logged in!");
-      navigate("/");
-      console.log(data);
+  const handleLogin = async () => {
+    try {
+      setErrorMsg("");
+      if ([email, password].some((field) => field.trim() == "")) {
+        alert("Fields can't be empty");
+        return;
+      }
+      if (!validateEmail(email)) {
+        alert("Email isn't valid");
+        return;
+      }
+      if (password.length < 6) {
+        alert("Password should have minimum six character");
+        return;
+      }
+      setLoading(true);
+
+      const { data, error } = await signIn(email, password);
+
+      if (error) {
+        setErrorMsg(error.message);
+      } else {
+        alert("Logged in!");
+        navigate("/");
+        console.log(data);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -75,10 +103,16 @@ export default function Login() {
               </div>
             </div>
           </form>
+          {errorMsg && <p className="text-red-500">{errorMsg}</p>}
         </CardContent>
         <CardFooter className="flex-col gap-2">
-          <Button onClick={handleLogin} type="submit" className="w-full">
-            Login
+          <Button
+            disabled={loading}
+            onClick={handleLogin}
+            type="submit"
+            className="w-full"
+          >
+            {loading ? "Loging.." : "Login"}
           </Button>
           <Button onClick={() => navigate("/register")} variant="link">
             Sign Up

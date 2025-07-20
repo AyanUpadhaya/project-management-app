@@ -20,23 +20,43 @@ export default function Register() {
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  function validateEmail(email: string) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setErrorMsg("");
-    setLoading(true);
+  const handleRegister = async () => {
+    try {
+      setErrorMsg("");
+      if ([email, password].some((field) => field.trim() == "")) {
+        alert("Fields can't be empty");
+        return;
+      }
+      if (!validateEmail(email)) {
+        alert("Email isn't valid");
+        return;
+      }
+      if (password.length < 6) {
+        alert("Password should have minimum six character");
+        return;
+      }
+      setLoading(true);
+      const { data, error } = await signUp(email, password);
 
-    const { data, error } = await signUp(email, password);
+      if (error) {
+        setErrorMsg(error.message);
+        return;
+      } else {
+        console.log(data);
+      }
 
-    setLoading(false);
-
-    if (error) {
-      setErrorMsg(error.message);
-      return;
+      // ✅ Since user is authenticated right away (email confirmation disabled)
+      navigate("/");
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
-
-    // ✅ Since user is authenticated right away (email confirmation disabled)
-    navigate("/");
   };
 
   return (
@@ -82,7 +102,6 @@ export default function Register() {
           <Button
             onClick={handleRegister}
             disabled={loading}
-            type="submit"
             className="w-full"
           >
             {loading ? "Registering..." : "Register"}

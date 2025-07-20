@@ -1,21 +1,29 @@
+/* eslint-disable react-refresh/only-export-components */
 // src/AuthProvider.jsx
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/superbase/supabaseClient";
-import { useNavigate } from "react-router-dom";
+import type { User } from "@supabase/supabase-js";
+
+interface AuthContextType {
+  user: User;
+  loading: boolean;
+}
 
 const AuthContext = createContext({});
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+
 
   // Load user on app start
   useEffect(() => {
     const getUser = async () => {
       const { data, error } = await supabase.auth.getUser();
       if (data?.user) {
-        setUser(data.user);
+        setUser(data?.user);
+      }else{
+        console.error(error);
       }
       setLoading(false);
     };
@@ -23,13 +31,9 @@ export const AuthProvider = ({ children }) => {
 
     // Listen for auth state changes
     const { data: listener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_, session) => {
         setUser(session?.user || null);
-        // if (session?.user) {
-        //   navigate("/dashboard");
-        // } else {
-        //   navigate("/login");
-        // }
+       
       }
     );
 
@@ -46,4 +50,6 @@ export const AuthProvider = ({ children }) => {
 };
 
 // Custom hook
-export const useAuth = () => useContext(AuthContext);
+export function useAuth(): AuthContextType {
+  return useContext(AuthContext) as AuthContextType;
+}

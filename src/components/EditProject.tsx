@@ -13,13 +13,19 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useToast } from "@/hook/use-toast";
 import { supabase } from "@/superbase/supabaseClient";
+import type { Project } from "@/types";
 
-export default function EditProject({ setProjects, project }) {
+type PropsType = {
+  setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
+  project:Project
+};
+
+export default function EditProject({ setProjects, project }: PropsType) {
   const [title, setTitle] = useState(project.title || "");
   const [description, setDescription] = useState(project.description || "");
   const [tags, setTags] = useState(project.tags.join(", "));
   const [loading, setLoading] = useState(false);
-  const {toast} = useToast();
+  const { toast } = useToast();
 
   const handleSubmit = async () => {
     try {
@@ -61,7 +67,6 @@ export default function EditProject({ setProjects, project }) {
       setLoading(false);
     }
   };
-
 
   return (
     <Dialog>

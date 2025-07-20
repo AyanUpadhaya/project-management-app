@@ -82,6 +82,8 @@ export default function ProjectDetail() {
       .eq("id", id)
       .select("*");
 
+    console.log(data);
+
     if (error) {
       console.error("Update failed:", error.message);
     } else {

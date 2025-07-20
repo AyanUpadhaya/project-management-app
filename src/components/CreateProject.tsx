@@ -13,14 +13,19 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { supabase } from "@/superbase/supabaseClient";
 import { useToast } from "@/hook/use-toast";
+import type { Project } from "@/types";
 
-export default function CreateProject({ setProjects }) {
+type PropsType = {
+  setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
+};
+
+export default function CreateProject({ setProjects }: PropsType) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
   const [estimationDate, setEstimationDate] = useState("");
   const [loading, setLoading] = useState(false);
-  const {toast} = useToast();
+  const { toast } = useToast();
 
   const handleSubmit = async () => {
     try {
@@ -41,6 +46,12 @@ export default function CreateProject({ setProjects }) {
       const { data, error } = await supabase
         .from("projects")
         .insert([newProject]);
+
+      if (data) {
+        // Optionally handle the new project data here if needed
+        setProjects((prev: Project[]) => [...prev, data[0]]);
+      }
+      
 
       if (error) {
         console.error("Failed to insert project:", error);

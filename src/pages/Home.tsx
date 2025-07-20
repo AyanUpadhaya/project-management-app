@@ -4,10 +4,14 @@ import ProjectList from "@/components/ProjectList";
 import { useEffect, useState } from "react";
 import { supabase } from "@/superbase/supabaseClient";
 import { getCurrentUser } from "@/services/authService";
+import { emptyBox } from "@/assets/getAssets";
 
-const Home = ({ emptyBox }) => {
+// Remove local Project type and import from types/index
+import type { Project } from "@/types";
 
-  const [projects, setProjects] = useState([]);
+const Home = () => {
+
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
