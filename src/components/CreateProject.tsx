@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { supabase } from "@/superbase/supabaseClient";
-import { useToast } from "@/hook/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@/types";
 
 type PropsType = {
@@ -51,7 +51,6 @@ export default function CreateProject({ setProjects }: PropsType) {
         // Optionally handle the new project data here if needed
         setProjects((prev: Project[]) => [...prev, data[0]]);
       }
-      
 
       if (error) {
         console.error("Failed to insert project:", error);

@@ -14,7 +14,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/superbase/supabaseClient";
 import { getCurrentUser } from "@/services/authService";
 import type { Project, Todo } from "@/types";
-import { useToast } from "@/hook/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import TodoList from "./TodoList";
 
 export default function ProjectDetail() {
