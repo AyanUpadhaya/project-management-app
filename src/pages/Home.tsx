@@ -1,51 +1,28 @@
 import CreateProject from "@/components/CreateProject";
 import ProjectList from "@/components/ProjectList";
-
-import { useEffect, useState } from "react";
-import { supabase } from "@/superbase/supabaseClient";
-import { getCurrentUser } from "@/services/authService";
 import { emptyBox } from "@/assets/getAssets";
 
 // Remove local Project type and import from types/index
-import type { Project } from "@/types";
+
+import { useProjects } from "@/api/querysApi";
+import { useAuth } from "@/context/AuthProvider";
 
 const Home = () => {
+  const { user } = useAuth();
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProjects = async () => {
-      const user = await getCurrentUser();
-      const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .eq("user_id", user?.id)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching projects:", error.message);
-      } else {
-        console.log(data);
-        setProjects(data);
-      }
-      setLoading(false);
-    };
-
-    fetchProjects();
-  }, []);
-
-  if (loading) return <p>Loading...</p>;
+  const { data, isLoading, isError } = useProjects(user?.id);
+  if (isError) return <div>Error...</div>;
+  if (isLoading) return <p>Loading...</p>;
   return (
     <div className="w-full p-4">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-semibold">Projects</h1>
-          <CreateProject setProjects={setProjects} />
+          <CreateProject />
         </div>
         <div>
-          {projects.length > 0 ? (
-            <ProjectList setProjects={setProjects} projects={projects} />
+          {data && data.length > 0 ? (
+            <ProjectList projects={data} />
           ) : (
             <div className="p-4 text-center flex flex-col items-center">
               <h2 className="text-lg text-gray-600 font-semibold">

@@ -12,24 +12,20 @@ import EditProject from "./EditProject";
 import type { Project } from "@/types";
 
 type PropsType = {
-  setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
   projects: Project[];
 };
 
-export default function ProjectList({ projects, setProjects }: PropsType) {
+export default function ProjectList({ projects }: PropsType) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {projects.map((project:Project) => (
+      {projects.map((project: Project) => (
         <Card key={project.id}>
           <CardHeader>
             <CardTitle className="flex justify-between gap-1">
               <div>
                 <Link to={`/project/${project.id}`}>{project.title}</Link>
               </div>
-              <EditProject
-                setProjects={setProjects}
-                project={project}
-              ></EditProject>
+              <EditProject project={project}></EditProject>
             </CardTitle>
             <CardDescription>{project.description}</CardDescription>
           </CardHeader>
@@ -46,7 +42,10 @@ export default function ProjectList({ projects, setProjects }: PropsType) {
                 Created: {new Date(project.created_at).toLocaleDateString()}
               </span>
               <span>
-                Due: {project.estimation_date ? new Date(project.estimation_date).toLocaleDateString() : "N/A"}
+                Due:{" "}
+                {project.estimation_date
+                  ? new Date(project.estimation_date).toLocaleDateString()
+                  : "N/A"}
               </span>
             </div>
           </CardFooter>

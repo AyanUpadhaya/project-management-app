@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { AuthProvider } from "./context/AuthProvider";
 import { Toaster } from "@/components/ui/toaster";
@@ -9,9 +10,10 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PrivateRoute from "@/services/PrivateRoute";
 
+const queryClient = new QueryClient();
 function App() {
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       <Toaster />
       <Sonner />
       <Router>
@@ -26,19 +28,8 @@ function App() {
                 </PrivateRoute>
               }
             >
-              <Route
-                index
-                element={
-                  <Home
-                  ></Home>
-                }
-              />
-              <Route
-                path="/project/:id"
-                element={
-                  <ProjectDetail/>
-                }
-              />
+              <Route index element={<Home></Home>} />
+              <Route path="/project/:id" element={<ProjectDetail />} />
             </Route>
             {/* login */}
             <Route path="/login" element={<Login></Login>}></Route>
@@ -47,7 +38,7 @@ function App() {
           </Routes>
         </AuthProvider>
       </Router>
-    </>
+    </QueryClientProvider>
   );
 }
 

@@ -19,3 +19,11 @@ export interface Todo {
   project_id?: string;
   user_id?: string;
 }
+
+
+export type UpdateProjectInput = Partial<Omit<Project, "created_at">> & {
+  id: string | undefined;
+};
+export type UpdateTodoInput = Partial<Omit<Todo, "created_at">> & {
+  id: string | undefined;
+};

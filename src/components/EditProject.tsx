@@ -12,59 +12,51 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/superbase/supabaseClient";
 import type { Project } from "@/types";
+import { useUpdateProject } from "@/api/mutationsApi";
 
 type PropsType = {
-  setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
   project: Project;
 };
 
-export default function EditProject({ setProjects, project }: PropsType) {
+export default function EditProject({ project }: PropsType) {
   const [title, setTitle] = useState(project.title || "");
   const [description, setDescription] = useState(project.description || "");
   const [tags, setTags] = useState(project.tags.join(", "));
-  const [loading, setLoading] = useState(false);
+  const updateMutation = useUpdateProject();
   const { toast } = useToast();
 
   const handleSubmit = async () => {
     try {
-      setLoading(true);
+
       const trimmedTags = tags
         .split(",")
         .map((tag) => tag.trim())
         .filter(Boolean); // removes empty strings
 
+      if (!title || !description || !trimmedTags) {
+        alert("fields can't be empty");
+        return;
+      }
       const updatedFields = {
         title,
         description,
         tags: trimmedTags,
       };
 
-      const { data, error } = await supabase
-        .from("projects")
-        .update(updatedFields)
-        .eq("id", project.id);
-
-      if (error) {
-        console.error("Update failed:", error.message);
-        return;
-      } else {
-        toast({
-          title: "Success",
-          description: "Project updated successfully!",
-        });
-      }
-
-      console.log("Updated project:", data);
-
-      setProjects((prev) =>
-        prev.map((p) => (p.id === project.id ? { ...p, ...updatedFields } : p))
-      );
+      await updateMutation.mutateAsync({ id: project.id, ...updatedFields });
+      toast({
+        title: "Success",
+        description: "Project updated",
+      });
     } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
@@ -116,8 +108,8 @@ export default function EditProject({ setProjects, project }: PropsType) {
           </div>
         </div>
         <DialogFooter>
-          <Button disabled={loading} type="submit" onClick={handleSubmit}>
-            {loading ? "Saving..." : "Save changes"}
+          <Button disabled={updateMutation.isPending} type="submit" onClick={handleSubmit}>
+            {updateMutation.isPending ? "Saving..." : "Save changes"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -101,7 +101,7 @@ export default function TodoList({
           onChange={(e) => setNewTodoText(e.target.value)}
           placeholder="Add a new todo"
         />
-        <Button onClick={handleAdd}>Add Todo</Button>
+        <Button onClick={handleAdd}> + Add Todo</Button>
       </div>
       <div>
         {todos.map((todo) => (

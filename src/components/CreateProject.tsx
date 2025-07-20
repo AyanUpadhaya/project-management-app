@@ -13,13 +13,10 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { supabase } from "@/superbase/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Project } from "@/types";
 
-type PropsType = {
-  setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
-};
 
-export default function CreateProject({ setProjects }: PropsType) {
+
+export default function CreateProject() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
@@ -49,7 +46,7 @@ export default function CreateProject({ setProjects }: PropsType) {
 
       if (data) {
         // Optionally handle the new project data here if needed
-        setProjects((prev: Project[]) => [...prev, data[0]]);
+        console.log(data[0]);
       }
 
       if (error) {
