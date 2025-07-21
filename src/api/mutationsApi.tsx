@@ -11,7 +11,7 @@ import type {
 export const useCreateProject = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (projectData) => {
+    mutationFn: async (projectData: Partial<Project>) => {
       const { data, error } = await supabase
         .from("projects")
         .insert([projectData])

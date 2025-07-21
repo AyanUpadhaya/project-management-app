@@ -63,7 +63,7 @@ export default function EditProject({ project }: PropsType) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button>Edit</Button>
+        <Button className="select-none">Edit</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>

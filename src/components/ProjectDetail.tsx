@@ -23,7 +23,7 @@ import { useAuth } from "@/context/AuthProvider";
 
 
 
-// call delete project api
+
 
 export default function ProjectDetail() {
   const { user } = useAuth();

@@ -11,25 +11,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { supabase } from "@/superbase/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
-
-
+import { useCreateProject } from "@/api/mutationsApi";
+import { useAuth } from "@/context/AuthProvider";
 
 export default function CreateProject() {
+  const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
   const [estimationDate, setEstimationDate] = useState("");
-  const [loading, setLoading] = useState(false);
+  const createProjectMutation = useCreateProject();
   const { toast } = useToast();
 
   const handleSubmit = async () => {
     try {
-      setLoading(true);
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
       const newProject = {
         user_id: user?.id,
         title,
@@ -40,27 +36,25 @@ export default function CreateProject() {
         progress: 0,
         notes: "",
       };
-      const { data, error } = await supabase
-        .from("projects")
-        .insert([newProject]);
 
-      if (data) {
-        // Optionally handle the new project data here if needed
-        console.log(data[0]);
+      if (
+        newProject.title.trim() == "" ||
+        newProject.description.trim() == "" ||
+        newProject.estimation_date == ""
+      ) {
+        alert(
+          "Fileds like title and description and estimation_date is required"
+        );
+        return;
       }
 
-      if (error) {
-        console.error("Failed to insert project:", error);
-      } else {
-        toast({
-          title: "Success",
-          description: "Project created successfully!",
-        });
-      }
+      await createProjectMutation.mutateAsync(newProject);
+      toast({
+        title: "Success",
+        description: "Project created successfully!",
+      });
     } catch (error) {
       console.error(error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -122,8 +116,12 @@ export default function CreateProject() {
           </div>
         </div>
         <DialogFooter>
-          <Button disabled={loading} type="submit" onClick={handleSubmit}>
-            {loading ? "Saving..." : "Save changes"}
+          <Button
+            disabled={createProjectMutation.isPending}
+            type="submit"
+            onClick={handleSubmit}
+          >
+            {createProjectMutation.isPending ? "Saving..." : "Save changes"}
           </Button>
         </DialogFooter>
       </DialogContent>

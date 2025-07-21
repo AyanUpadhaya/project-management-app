@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
 import EditProject from "./EditProject";
 import type { Project } from "@/types";
+import { Badge } from "@/components/ui/badge"
 
 type PropsType = {
   projects: Project[];
@@ -35,6 +36,13 @@ export default function ProjectList({ projects }: PropsType) {
               <span className="text-sm font-medium">{project.progress}%</span>
             </div>
             <Progress value={project.progress} className="mt-2" />
+            <div className="py-3">
+              {project.tags.map((badge) => (
+                <Badge key={badge} variant="secondary">
+                  {badge}
+                </Badge>
+              ))}
+            </div>
           </CardContent>
           <CardFooter>
             <div className="flex w-full justify-between text-sm text-muted-foreground">
