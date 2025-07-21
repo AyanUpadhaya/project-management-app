@@ -25,7 +25,7 @@ function TodoItem({
   const [text, setText] = useState(todo.title);
 
   const handleUpdate = () => {
-    onUpdate(todo.id!, { title: text });
+    onUpdate(todo.id!, { ...todo,title: text });
     setIsEditing(false);
   };
 
@@ -36,7 +36,7 @@ function TodoItem({
           <Checkbox
             checked={todo.completed}
             onCheckedChange={(checked) =>
-              onUpdate(todo.id!, { completed: !!checked })
+              onUpdate(todo.id!, { ...todo, completed: !!checked })
             }
           />
           {isEditing ? (

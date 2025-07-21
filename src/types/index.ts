@@ -1,3 +1,6 @@
+export type ProjectStatus = "pending" | "in_progress" | "finished";
+export type PriorityLevel = "high" | "medium" | "low";
+
 export interface Project {
   id: string;
   title: string;
@@ -8,18 +11,18 @@ export interface Project {
   progress: number;
   user_id: string;
   estimation_date?: string;
+  status?: ProjectStatus;
 }
 
 export interface Todo {
   id?: string;
   title?: string;
-  priority?: "low" | "medium" | "high";
+  priority?: PriorityLevel;
   completed?: boolean;
   created_at?: string;
   project_id?: string;
   user_id?: string;
 }
-
 
 export type UpdateProjectInput = Partial<Omit<Project, "created_at">> & {
   id: string | undefined;

@@ -9,6 +9,7 @@ import DashboardLayout from "./layout/DashboardLayout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PrivateRoute from "@/services/PrivateRoute";
+import GuestRoute from "./services/GuestRoute";
 
 const queryClient = new QueryClient();
 function App() {
@@ -32,8 +33,22 @@ function App() {
               <Route path="/project/:id" element={<ProjectDetail />} />
             </Route>
             {/* login */}
-            <Route path="/login" element={<Login></Login>}></Route>
-            <Route path="/register" element={<Register></Register>}></Route>
+            <Route
+              path="/login"
+              element={
+                <GuestRoute>
+                  <Login></Login>
+                </GuestRoute>
+              }
+            ></Route>
+            <Route
+              path="/register"
+              element={
+                <GuestRoute>
+                  <Register></Register>
+                </GuestRoute>
+              }
+            ></Route>
             <Route path="*" element={<p>Not found</p>} />
           </Routes>
         </AuthProvider>

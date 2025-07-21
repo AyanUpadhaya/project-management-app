@@ -9,12 +9,26 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
 import EditProject from "./EditProject";
-import type { Project } from "@/types";
-import { Badge } from "@/components/ui/badge"
+import type { Project, ProjectStatus } from "@/types";
+import { Badge } from "@/components/ui/badge";
 
 type PropsType = {
   projects: Project[];
 };
+
+function getStatusClasses(status:ProjectStatus)  {
+  switch (status) {
+    case "pending":
+      return "bg-yellow-400 dark:bg-yellow-600 text-black dark:text-white";
+    case "in_progress":
+      return "bg-blue-500 dark:bg-blue-600 text-white";
+    case "finished":
+      return "bg-green-500 dark:bg-green-600 text-white";
+    default:
+      return "bg-gray-300 dark:bg-gray-700 text-black dark:text-white";
+  }
+}
+
 
 export default function ProjectList({ projects }: PropsType) {
   return (
@@ -23,8 +37,14 @@ export default function ProjectList({ projects }: PropsType) {
         <Card key={project.id}>
           <CardHeader>
             <CardTitle className="flex justify-between gap-1">
-              <div>
+              <div className="flex gap-1 items-center">
                 <Link to={`/project/${project.id}`}>{project.title}</Link>
+                <Badge
+                  variant="secondary"
+                  className={getStatusClasses(project.status ?? "pending")}
+                >
+                  {project.status}
+                </Badge>
               </div>
               <EditProject project={project}></EditProject>
             </CardTitle>

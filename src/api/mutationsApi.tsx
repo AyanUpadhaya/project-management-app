@@ -100,6 +100,29 @@ export const useUpdateTodo = () => {
         .single();
 
       if (error) throw new Error(error.message);
+
+      // 2. Fetch all todos for the project/user
+      const { data: allTodos, error: fetchError } = await supabase
+        .from("todos")
+        .select("completed")
+        .eq("project_id", updates.project_id)
+        .eq("user_id", updates.user_id);
+
+      if (fetchError) throw new Error(fetchError.message);
+
+      // 3. Calculate progress
+      const total = allTodos.length;
+      const completed = allTodos.filter((t) => t.completed).length;
+      const progress = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+      // 4. Update project progress
+      const { error: projectError } = await supabase
+        .from("projects")
+        .update({ progress })
+        .eq("id", updates.project_id);
+
+      if (projectError) throw new Error(projectError.message);
+
       return data;
     },
     onSuccess: (updatedTodo) => {
@@ -119,6 +142,28 @@ export const useDeleteTodo = (
     mutationFn: async ({ id }: { id: string }) => {
       const { error } = await supabase.from("todos").delete().eq("id", id);
       if (error) throw new Error(error.message);
+      // 2. Fetch all todos for the project/user
+      const { data: allTodos, error: fetchError } = await supabase
+        .from("todos")
+        .select("completed")
+        .eq("project_id", project_id)
+        .eq("user_id", user_id);
+
+      if (fetchError) throw new Error(fetchError.message);
+
+      // 3. Calculate progress
+      const total = allTodos.length;
+      const completed = allTodos.filter((t) => t.completed).length;
+      const progress = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+      // 4. Update project progress
+      const { error: projectError } = await supabase
+        .from("projects")
+        .update({ progress })
+        .eq("id", project_id);
+
+      if (projectError) throw new Error(projectError.message);
+      
       return id;
     },
     onSuccess: () => {
