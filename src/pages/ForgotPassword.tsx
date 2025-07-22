@@ -1,7 +1,5 @@
 import { useState } from "react";
-// import { supabase } from "@/superbase/supabaseClient";
 import { useNavigate } from "react-router-dom";
-import { signUp } from "@/services/authService";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -53,7 +51,6 @@ export default function ForgotPassword() {
          });
       }
 
-      // ✅ Since user is authenticated right away (email confirmation disabled)
       navigate("/login");
     } catch (error) {
       console.error(error);
