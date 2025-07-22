@@ -1,6 +1,6 @@
-# React & Superbase Project Managment app
+# React & Supabase Project Managment app
 
-Superbase CRUD operations
+Supabase CRUD operations
 
 1. Create
 ``` js

@@ -25,7 +25,7 @@ function TodoItem({
   const [text, setText] = useState(todo.title);
 
   const handleUpdate = () => {
-    onUpdate(todo.id!, { ...todo,title: text });
+    onUpdate(todo.id!, { ...todo, title: text });
     setIsEditing(false);
   };
 
@@ -53,7 +53,10 @@ function TodoItem({
           <Select
             value={todo.priority}
             onValueChange={(priority) =>
-              onUpdate(todo.id!, { priority: priority as Todo["priority"] })
+              onUpdate(todo.id!, {
+                ...todo,
+                priority: priority as Todo["priority"],
+              })
             }
           >
             <SelectTrigger className="w-[120px]">

@@ -10,6 +10,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PrivateRoute from "@/services/PrivateRoute";
 import GuestRoute from "./services/GuestRoute";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 function App() {
@@ -38,6 +40,22 @@ function App() {
               element={
                 <GuestRoute>
                   <Login></Login>
+                </GuestRoute>
+              }
+            ></Route>
+            <Route
+              path="/forgot-password"
+              element={
+                <GuestRoute>
+                  <ForgotPassword></ForgotPassword>
+                </GuestRoute>
+              }
+            ></Route>
+            <Route
+              path="/reset-password"
+              element={
+                <GuestRoute>
+                  <ResetPassword></ResetPassword>
                 </GuestRoute>
               }
             ></Route>
