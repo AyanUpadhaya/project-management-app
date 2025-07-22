@@ -93,7 +93,7 @@ export default function ForgotPassword() {
             disabled={loading}
             className="w-full"
           >
-            {loading ? "Registering..." : "Register"}
+            {loading ? "Sending..." : "Send"}
           </Button>
           <Button onClick={() => navigate("/login")} variant="link">
             Login

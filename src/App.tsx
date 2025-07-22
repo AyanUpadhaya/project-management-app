@@ -54,9 +54,7 @@ function App() {
             <Route
               path="/reset-password"
               element={
-                <GuestRoute>
-                  <ResetPassword></ResetPassword>
-                </GuestRoute>
+                <ResetPassword></ResetPassword>
               }
             ></Route>
             <Route
