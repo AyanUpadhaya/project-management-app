@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { NotebookIcon, Trash2Icon } from "lucide-react";
+import { ArrowBigLeft, NotebookIcon, Trash2Icon } from "lucide-react";
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -18,12 +18,14 @@ import { useToast } from "@/hooks/use-toast";
 import TodoList from "./TodoList";
 import { useGetProject, useTodos } from "@/api/querysApi";
 import type { Todo } from "@/types";
-import { useCreateTodo, useDeleteProject, useDeleteTodo, useUpdateProject, useUpdateTodo } from "@/api/mutationsApi";
+import {
+  useCreateTodo,
+  useDeleteProject,
+  useDeleteTodo,
+  useUpdateProject,
+  useUpdateTodo,
+} from "@/api/mutationsApi";
 import { useAuth } from "@/context/AuthProvider";
-
-
-
-
 
 export default function ProjectDetail() {
   const { user } = useAuth();
@@ -33,7 +35,7 @@ export default function ProjectDetail() {
   const updateProjectMutation = useUpdateProject();
   const deleteProjectMutation = useDeleteProject();
   const createTodoMutation = useCreateTodo();
-  const updateTodoMutation = useUpdateTodo()
+  const updateTodoMutation = useUpdateTodo();
   const deleteTodoMutation = useDeleteTodo(id, user?.id);
   const [notes, setNotes] = useState<string>(project?.notes);
   const { data: todos } = useTodos(id, user?.id);
@@ -77,9 +79,9 @@ export default function ProjectDetail() {
         project_id: id,
       };
 
-      if(Object.keys(newTodo).some(item=>item.trim() == "")){
-        alert("Empty values not allowed")
-        return 
+      if (Object.keys(newTodo).some((item) => item.trim() == "")) {
+        alert("Empty values not allowed");
+        return;
       }
 
       await createTodoMutation.mutateAsync(newTodo);
@@ -101,10 +103,10 @@ export default function ProjectDetail() {
   const handleUpdateTodo = async (id: string, updatedFields: Partial<Todo>) => {
     try {
       await updateTodoMutation.mutateAsync({ id, ...updatedFields });
-        toast({
-          title: "Success",
-          description: "Todo updated",
-        });
+      toast({
+        title: "Success",
+        description: "Todo updated",
+      });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -117,44 +119,46 @@ export default function ProjectDetail() {
   };
 
   const handleDeleteTodo = async (id: string) => {
-   try {
-    await deleteTodoMutation.mutateAsync({id});
-     toast({
-       title: "Success",
-       description: "Todo Deleted",
-     });
-   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    toast({
-      title: "Error",
-      description: errorMessage,
-      variant: "destructive",
-    });
-   }
+    try {
+      await deleteTodoMutation.mutateAsync({ id });
+      toast({
+        title: "Success",
+        description: "Todo Deleted",
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDelete = async (projectId: string) => {
-   try {
-     const confirmDelete = window.confirm(
-       "Are you sure you want to delete this project?"
-     );
-     if (!confirmDelete) return;
+    try {
+      const confirmDelete = window.confirm(
+        "Are you sure you want to delete this project?"
+      );
+      if (!confirmDelete) return;
 
-     await deleteProjectMutation.mutateAsync({ id: projectId });
-     toast({
-       title: "Success",
-       description: "Project deleted!",
-     });
+      await deleteProjectMutation.mutateAsync({ id: projectId });
+      toast({
+        title: "Success",
+        description: "Project deleted!",
+      });
 
-     navigate("/");
-   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    toast({
-      title: "Error",
-      description: errorMessage,
-      variant: "destructive",
-    });
-   }
+      navigate("/");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) return <p>Loading project...</p>;
@@ -164,6 +168,12 @@ export default function ProjectDetail() {
     <div>
       <div className="flex justify-between">
         <div className="space-y-4">
+          <div>
+            <Button className="cursor-pointer" onClick={() => navigate("/")} variant="outline">
+              <ArrowBigLeft className="w-4 h-4"></ArrowBigLeft>
+              <span>Back Projects</span>
+            </Button>
+          </div>
           <h1 className="text-3xl font-semibold">{project.title}</h1>
           <p className="text-gray-600">{project.description}</p>
         </div>
@@ -195,7 +205,7 @@ export default function ProjectDetail() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Add your notes here..."
-                  className="mt-2"
+                  className="mt-2 max-h-[300px]"
                 />
                 <Button
                   disabled={updateProjectMutation.isPending}
