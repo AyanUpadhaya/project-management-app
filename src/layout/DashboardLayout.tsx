@@ -1,4 +1,4 @@
-import { LogOutIcon, MailIcon, Moon, Sun } from "lucide-react";
+import { LogOutIcon, MailIcon, Moon, NotebookIcon, Sun } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -9,12 +9,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import EmailSender from "@/components/EmailSender";
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useNavigate } from "react-router-dom";
 import { signOut } from "@/services/authService";
 import { useDarkMode } from "@/context/DarkModeContext";
 
 const DashboardLayout = () => {
   const { toggleDarkMode, isDark } = useDarkMode();
+  const navigate = useNavigate()
   return (
     <div>
       <header className="py-4 sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -42,6 +43,14 @@ const DashboardLayout = () => {
                 ) : (
                   <Moon className="w-5 h-5" />
                 )}
+              </Button>
+              <Button
+                onClick={() => navigate("/notes")}
+                variant="default"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <NotebookIcon className="w-4 h-4 text-white"></NotebookIcon>
+                <span>Notes</span>
               </Button>
               <Button
                 onClick={() => signOut()}
