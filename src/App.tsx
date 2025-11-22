@@ -12,6 +12,7 @@ import PrivateRoute from "@/services/PrivateRoute";
 import GuestRoute from "./services/GuestRoute";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import { DarkModeProvider } from "./context/DarkModeContext";
 
 const queryClient = new QueryClient();
 function App() {
@@ -21,52 +22,54 @@ function App() {
       <Sonner />
       <Router>
         <AuthProvider>
-          <Routes>
-            {/* dashboard */}
-            <Route
-              path="/"
-              element={
-                <PrivateRoute>
-                  <DashboardLayout></DashboardLayout>
-                </PrivateRoute>
-              }
-            >
-              <Route index element={<Home></Home>} />
-              <Route path="/project/:id" element={<ProjectDetail />} />
-            </Route>
-            {/* login */}
-            <Route
-              path="/login"
-              element={
-                <GuestRoute>
-                  <Login></Login>
-                </GuestRoute>
-              }
-            ></Route>
-            <Route
-              path="/forgot-password"
-              element={
-                <GuestRoute>
-                  <ForgotPassword></ForgotPassword>
-                </GuestRoute>
-              }
-            ></Route>
-            <Route
-              path="/reset-password"
-              element={
-                <ResetPassword></ResetPassword>
-              }
-            ></Route>
-            <Route
-              path="/register"
-              element={
-                <GuestRoute>
-                  <Register></Register>
-                </GuestRoute>
-              }
-            ></Route>
-            <Route path="*" element={<p>Not found</p>} />
-          </Routes>
+          <DarkModeProvider>
+            <Routes>
+              {/* dashboard */}
+              <Route
+                path="/"
+                element={
+                  <PrivateRoute>
+                    <DashboardLayout></DashboardLayout>
+                  </PrivateRoute>
+                }
+              >
+                <Route index element={<Home></Home>} />
+                <Route path="/project/:id" element={<ProjectDetail />} />
+              </Route>
+              {/* login */}
+              <Route
+                path="/login"
+                element={
+                  <GuestRoute>
+                    <Login></Login>
+                  </GuestRoute>
+                }
+              ></Route>
+              <Route
+                path="/forgot-password"
+                element={
+                  <GuestRoute>
+                    <ForgotPassword></ForgotPassword>
+                  </GuestRoute>
+                }
+              ></Route>
+              <Route
+                path="/reset-password"
+                element={
+                  <ResetPassword></ResetPassword>
+                }
+              ></Route>
+              <Route
+                path="/register"
+                element={
+                  <GuestRoute>
+                    <Register></Register>
+                  </GuestRoute>
+                }
+              ></Route>
+              <Route path="*" element={<p>Not found</p>} />
+            </Routes>
+          </DarkModeProvider>
         </AuthProvider>
       </Router>
     </QueryClientProvider>

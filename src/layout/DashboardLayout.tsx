@@ -1,4 +1,4 @@
-import { LogOutIcon, MailIcon } from "lucide-react";
+import { LogOutIcon, MailIcon, Moon, Sun } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,8 +11,10 @@ import { Button } from "@/components/ui/button";
 import EmailSender from "@/components/EmailSender";
 import { Link, Outlet } from "react-router-dom";
 import { signOut } from "@/services/authService";
+import { useDarkMode } from "@/context/DarkModeContext";
 
 const DashboardLayout = () => {
+  const { toggleDarkMode, isDark } = useDarkMode();
   return (
     <div>
       <header className="py-4 sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -25,6 +27,22 @@ const DashboardLayout = () => {
             </Link>
 
             <div className="flex gap-3 items-center">
+         
+              <Button
+                onClick={toggleDarkMode}
+                className={`p-2 rounded-lg transition-colors cursor-pointer ${
+                  isDark
+                    ? "bg-slate-800 hover:bg-slate-700 text-yellow-400"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                }`}
+                title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {isDark ? (
+                  <Sun className="w-5 h-5" />
+                ) : (
+                  <Moon className="w-5 h-5" />
+                )}
+              </Button>
               <Button
                 onClick={() => signOut()}
                 variant="destructive"
@@ -33,6 +51,7 @@ const DashboardLayout = () => {
                 <LogOutIcon className="w-4 h-4 text-white"></LogOutIcon>
                 <span>Logout</span>
               </Button>
+
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="outline">
