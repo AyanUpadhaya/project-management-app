@@ -14,13 +14,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false)
+  const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   function validateEmail(email: string) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -49,7 +51,10 @@ export default function Login() {
       if (error) {
         setErrorMsg(error.message);
       } else {
-        alert("Logged in!");
+        toast({
+          title: "Success",
+          description: "Logged in successfully!",
+        });
         navigate("/");
         console.log(data);
       }

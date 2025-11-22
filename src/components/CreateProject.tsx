@@ -42,9 +42,11 @@ export default function CreateProject() {
         newProject.description.trim() == "" ||
         newProject.estimation_date == ""
       ) {
-        alert(
-          "Fileds like title and description and estimation_date is required"
-        );
+        toast({
+          title: "Error",
+          description:
+            "Fileds like title and description and estimation_date is required",
+        });
         return;
       }
 
