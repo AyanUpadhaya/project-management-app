@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useDarkMode } from '@/context/DarkModeContext';
 
@@ -6,11 +6,14 @@ import NoteModal from '../components/NoteModal';
 import NoteViewModal from '../components/NoteViewModal';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import NoteCard from '../components/NoteCard';
-import { deleteNote, getNotes, saveNote, updateNote, type Note } from '@/utils/notesStorage';
+
+import { useAuth } from '@/context/AuthProvider';
+import { useNotes } from '@/api/querysApi';
+import type { Note } from '@/utils/notesStorage';
 
 function Notes() {
   const { isDark } = useDarkMode();
-  const [notes, setNotes] = useState<Note[]>([]);
+  // const [notes, setNotes] = useState<Note[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -19,11 +22,12 @@ function Notes() {
   const [formTitle, setFormTitle] = useState('');
   const [formContent, setFormContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleting] = useState(false);
 
-  useEffect(() => {
-    setNotes(getNotes());
-  }, []);
+  const { user } = useAuth();
+  const { data: notes, isLoading, isError } = useNotes(user?.id);
+  const notesList: Note[] = notes ?? [];
+
 
   const handleOpenAddModal = () => {
     setFormTitle('');
@@ -33,14 +37,7 @@ function Notes() {
 
   const handleSaveNewNote = () => {
     setIsSaving(true);
-    setTimeout(() => {
-      const newNote = saveNote(formTitle, formContent);
-      setNotes([...notes, newNote]);
-      setIsAddModalOpen(false);
-      setFormTitle('');
-      setFormContent('');
-      setIsSaving(false);
-    }, 300);
+    
   };
 
   const handleOpenViewModal = (note: Note) => {
@@ -57,18 +54,7 @@ function Notes() {
 
   const handleSaveEditedNote = () => {
     if (!currentNote) return;
-    setIsSaving(true);
-    setTimeout(() => {
-      const updated = updateNote(currentNote.id, formTitle, formContent);
-      if (updated) {
-        setNotes(notes.map(n => (n.id === currentNote.id ? updated : n)));
-        setIsEditModalOpen(false);
-        setCurrentNote(null);
-        setFormTitle('');
-        setFormContent('');
-      }
-      setIsSaving(false);
-    }, 300);
+    
   };
 
   const handleOpenDeleteModal = () => {
@@ -78,17 +64,6 @@ function Notes() {
 
   const handleConfirmDelete = () => {
     if (!currentNote) return;
-    setIsDeleting(true);
-    setTimeout(() => {
-      if (deleteNote(currentNote.id)) {
-        setNotes(notes.filter(n => n.id !== currentNote.id));
-        setIsDeleteModalOpen(false);
-        setCurrentNote(null);
-        setFormTitle('');
-        setFormContent('');
-      }
-      setIsDeleting(false);
-    }, 300);
   };
 
   const handleCloseAddModal = () => {
@@ -112,6 +87,9 @@ function Notes() {
     }
   };
 
+  if (isError) return <div>Error...</div>;
+  if (isLoading) return <p>Loading...</p>;
+
   return (
     <div className="space-y-6">
       <div className={`rounded-xl shadow-sm border p-6 transition-colors ${
@@ -134,8 +112,7 @@ function Notes() {
             Add Note
           </button>
         </div>
-
-        {notes.length === 0 ? (
+        {notesList.length === 0 ? (
           <div className="text-center py-12">
             <p className={`text-lg ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               No notes yet. Create your first note!
@@ -143,7 +120,7 @@ function Notes() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {notes.map(note => (
+            {notesList.map(note => (
               <NoteCard
                 key={note.id}
                 note={note}
@@ -152,6 +129,7 @@ function Notes() {
             ))}
           </div>
         )}
+
       </div>
 
       <NoteModal

@@ -9,7 +9,7 @@ interface NoteCardProps {
 function NoteCard({ note, onClick }: NoteCardProps) {
   const { isDark } = useDarkMode();
 
-  const formatDate = (timestamp: number) => {
+  const formatDate = (timestamp) => {
     return new Date(timestamp).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',

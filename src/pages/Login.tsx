@@ -56,7 +56,6 @@ export default function Login() {
           description: "Logged in successfully!",
         });
         navigate("/");
-        console.log(data);
       }
     } catch (error) {
       console.error(error);

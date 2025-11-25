@@ -18,7 +18,6 @@ export const useProjects = (userId: string | undefined) => {
   });
 };
 
-
 export const useGetProject = (projectId: string | undefined) => {
   return useQuery({
     queryKey: ["projects", projectId],
@@ -50,6 +49,23 @@ export const useTodos = (
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
+      if (error) throw new Error(error.message);
+      return data;
+    },
+  });
+};
+
+//notes
+
+export const useNotes = (userId: string | undefined) => {
+  return useQuery({
+    queryKey: ["notes", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("notes")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return data;
     },

@@ -1,12 +1,13 @@
 export interface Note {
   id: string;
+  user_id?: string;
   title: string;
   content: string;
-  createdAt: number;
-  updatedAt: number;
+  createdAt?: string | number;
+  updatedAt?: string | number;
 }
 
-const NOTES_KEY = 'devtools_notes';
+const NOTES_KEY = "devtools_notes";
 
 export function getNotes(): Note[] {
   try {
@@ -31,9 +32,13 @@ export function saveNote(title: string, content: string): Note {
   return newNote;
 }
 
-export function updateNote(id: string, title: string, content: string): Note | null {
+export function updateNote(
+  id: string,
+  title: string,
+  content: string
+): Note | null {
   const notes = getNotes();
-  const index = notes.findIndex(note => note.id === id);
+  const index = notes.findIndex((note) => note.id === id);
   if (index === -1) return null;
 
   notes[index] = {
@@ -48,7 +53,7 @@ export function updateNote(id: string, title: string, content: string): Note | n
 
 export function deleteNote(id: string): boolean {
   const notes = getNotes();
-  const filtered = notes.filter(note => note.id !== id);
+  const filtered = notes.filter((note) => note.id !== id);
   if (filtered.length === notes.length) return false;
   localStorage.setItem(NOTES_KEY, JSON.stringify(filtered));
   return true;
