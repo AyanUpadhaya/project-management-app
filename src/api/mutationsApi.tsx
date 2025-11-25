@@ -6,6 +6,7 @@ import type {
   UpdateProjectInput,
   UpdateTodoInput,
 } from "@/types";
+import type { Note } from "@/utils/notesStorage";
 
 //projects
 export const useCreateProject = () => {
@@ -163,12 +164,34 @@ export const useDeleteTodo = (
         .eq("id", project_id);
 
       if (projectError) throw new Error(projectError.message);
-      
+
       return id;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["todos", project_id, user_id],
+      });
+    },
+  });
+};
+
+//notes
+export const useCreateNote = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (noteData: Partial<Note>) => {
+      const { data, error } = await supabase
+        .from("notes")
+        .insert([noteData])
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: (newNote) => {
+      queryClient.invalidateQueries({
+        queryKey: ["notes", newNote.user_id],
       });
     },
   });
