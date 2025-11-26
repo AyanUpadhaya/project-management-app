@@ -1,3 +1,5 @@
+import type { Note } from "@/utils/notesStorage";
+
 export type ProjectStatus = "pending" | "in_progress" | "finished";
 export type PriorityLevel = "high" | "medium" | "low";
 
@@ -28,5 +30,8 @@ export type UpdateProjectInput = Partial<Omit<Project, "created_at">> & {
   id: string | undefined;
 };
 export type UpdateTodoInput = Partial<Omit<Todo, "created_at">> & {
+  id: string | undefined;
+};
+export type UpdateNoteInput = Partial<Omit<Note, "created_at" | "updated_at">> & {
   id: string | undefined;
 };

@@ -11,7 +11,7 @@ import { useAuth } from "@/context/AuthProvider";
 import { useNotes } from "@/api/querysApi";
 import type { Note } from "@/utils/notesStorage";
 import { useToast } from "@/hooks/use-toast";
-import { useCreateNote } from "@/api/mutationsApi";
+import { useCreateNote, useUpdateNote } from "@/api/mutationsApi";
 
 function Notes() {
   const { isDark } = useDarkMode();
@@ -31,6 +31,7 @@ function Notes() {
   const { data: notes, isLoading, isError } = useNotes(user?.id);
   const notesList: Note[] = notes ?? [];
   const createNoteMutation = useCreateNote();
+  const updateNoteMutation = useUpdateNote();
 
   const handleOpenAddModal = () => {
     setFormTitle("");
@@ -84,8 +85,36 @@ function Notes() {
     setIsEditModalOpen(true);
   };
 
-  const handleSaveEditedNote = () => {
+  const handleSaveEditedNote = async () => {
     if (!currentNote) return;
+
+    try {
+      const updatedFields = {
+        user_id: user?.id,
+        title: formTitle,
+        content: formContent,
+      };
+
+      if (formTitle.trim() == "" || formContent.trim() == "") {
+        toast({
+          title: "Error",
+          description: "Fileds like title and content is required",
+        });
+        return;
+      }
+
+      await updateNoteMutation.mutateAsync({
+        id: currentNote.id,
+        ...updatedFields,
+      });
+
+      toast({
+        title: "Success",
+        description: "Note updated",
+      });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const handleOpenDeleteModal = () => {
@@ -210,7 +239,7 @@ function Notes() {
         onContentChange={setFormContent}
         onSave={handleSaveEditedNote}
         onClose={handleCloseEditModal}
-        isSaving={isSaving}
+        isSaving={updateNoteMutation.isPending}
       />
 
       <DeleteConfirmModal

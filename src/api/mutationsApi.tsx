@@ -3,6 +3,7 @@ import { supabase } from "@/superbase/supabaseClient";
 import type {
   Project,
   Todo,
+  UpdateNoteInput,
   UpdateProjectInput,
   UpdateTodoInput,
 } from "@/types";
@@ -192,6 +193,29 @@ export const useCreateNote = () => {
     onSuccess: (newNote) => {
       queryClient.invalidateQueries({
         queryKey: ["notes", newNote.user_id],
+      });
+    },
+  });
+};
+
+export const useUpdateNote = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: UpdateNoteInput) => {
+      const { data, error } = await supabase
+        .from("notes")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+
+    onSuccess: (updated: Note) => {
+      queryClient.invalidateQueries({
+        queryKey: ["notes", updated.user_id],
       });
     },
   });
