@@ -11,11 +11,14 @@ import { useAuth } from "@/context/AuthProvider";
 import { useNotes } from "@/api/querysApi";
 import type { Note } from "@/utils/notesStorage";
 import { useToast } from "@/hooks/use-toast";
-import { useCreateNote, useUpdateNote } from "@/api/mutationsApi";
+import {
+  useCreateNote,
+  useDeleteNote,
+  useUpdateNote,
+} from "@/api/mutationsApi";
 
 function Notes() {
-  const { isDark } = useDarkMode();
-  // const [notes, setNotes] = useState<Note[]>([]);
+  const { isDark } = useDarkMode(); 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -23,8 +26,6 @@ function Notes() {
   const [currentNote, setCurrentNote] = useState<Note | null>(null);
   const [formTitle, setFormTitle] = useState("");
   const [formContent, setFormContent] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting] = useState(false);
   const { toast } = useToast();
 
   const { user } = useAuth();
@@ -32,6 +33,7 @@ function Notes() {
   const notesList: Note[] = notes ?? [];
   const createNoteMutation = useCreateNote();
   const updateNoteMutation = useUpdateNote();
+  const deleteNoteMutation = useDeleteNote();
 
   const handleOpenAddModal = () => {
     setFormTitle("");
@@ -113,7 +115,15 @@ function Notes() {
         description: "Note updated",
       });
     } catch (error) {
-      console.log(error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : String(error) || "Failed to update note";
+      toast({
+        title: "Error",
+        description: errorMessage,
+      });
+      console.error(error);
     }
   };
 
@@ -122,8 +132,34 @@ function Notes() {
     setIsDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (!currentNote) return;
+  const handleConfirmDelete = async () => {
+    if (!currentNote){ 
+      console.log("no note found")
+      return;
+    }
+
+    try {
+      await deleteNoteMutation.mutateAsync({
+        id: currentNote.id,
+        userId: user.id,
+      });
+      toast({
+        title: "Success",
+        description: "Note deleted",
+      });
+      setIsDeleteModalOpen(false);
+      setIsViewModalOpen(false);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : String(error) || "Failed to delete note";
+      toast({
+        title: "Error",
+        description: errorMessage,
+      });
+      console.error(error);
+    }
   };
 
   const handleCloseAddModal = () => {
@@ -250,7 +286,7 @@ function Notes() {
           setIsDeleteModalOpen(false);
           setIsViewModalOpen(true);
         }}
-        isDeleting={isDeleting}
+        isDeleting={deleteNoteMutation.isPending}
       />
     </div>
   );

@@ -220,3 +220,26 @@ export const useUpdateNote = () => {
     },
   });
 };
+
+export const useDeleteNote = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, userId }: { id: string; userId: string }) => {
+      const { error } = await supabase.from("notes").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+
+      return { success: true };
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ["notes", variables.userId] });
+    },
+  });
+};
+
+/**
+ * onSuccess: (data, variables, context) => {
+  console.log("Server returned:", data);
+  console.log("You sent:", variables);
+  console.log("Context from onMutate:", context);
+}
+ */
