@@ -1,4 +1,4 @@
-import { LogOutIcon, MailIcon, Moon, NotebookIcon, Sun } from "lucide-react";
+import { BookIcon, LogOutIcon, MailIcon, Moon, NotebookIcon, Sun } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +45,14 @@ const DashboardLayout = () => {
                 )}
               </Button>
               <Button
+                onClick={() => navigate("/trello")}
+                variant="default"
+                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <BookIcon className="w-4 h-4 text-white"></BookIcon>
+                <span>Trello</span>
+              </Button>
+              <Button
                 onClick={() => navigate("/notes")}
                 variant="default"
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
@@ -82,7 +90,7 @@ const DashboardLayout = () => {
           </div>
         </div>
       </header>
-      <main className="container max-w-screen-2xl mx-auto flex min-h-[calc(100vh_-_theme(spacing.14))] flex-1 flex-col gap-4 bg-muted/40 p-4 md:gap-8 md:p-10">
+      <main className="container max-w-screen-2xl mx-auto flex min-h-[calc(100vh_-_theme(spacing.14))] flex-1 flex-col gap-4 bg-muted/40 p-4 md:gap-8 md:p-6">
         <Outlet></Outlet>
       </main>
     </div>

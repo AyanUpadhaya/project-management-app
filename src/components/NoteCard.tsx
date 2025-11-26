@@ -1,5 +1,6 @@
 import type { Note } from '@/utils/notesStorage';
 import { useDarkMode } from '@/context/DarkModeContext';
+import { formatReadableDate } from '@/utils/dates';
 
 interface NoteCardProps {
   note: Note;
@@ -8,14 +9,6 @@ interface NoteCardProps {
 
 function NoteCard({ note, onClick }: NoteCardProps) {
   const { isDark } = useDarkMode();
-
-  const formatDate = (timestamp) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
 
   const preview = note.content.length > 100 ? note.content.substring(0, 100) + '...' : note.content;
 
@@ -35,7 +28,7 @@ function NoteCard({ note, onClick }: NoteCardProps) {
         {preview}
       </p>
       <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-        {formatDate(note.updatedAt)}
+        {formatReadableDate(note.updated_at)}
       </p>
     </div>
   );
