@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { ArrowBigLeft, NotebookIcon, Trash2Icon } from "lucide-react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCurrentUser } from "@/services/authService";
 
@@ -37,9 +37,15 @@ export default function ProjectDetail() {
   const createTodoMutation = useCreateTodo();
   const updateTodoMutation = useUpdateTodo();
   const deleteTodoMutation = useDeleteTodo(id, user?.id);
-  const [notes, setNotes] = useState<string>(project?.notes);
+  const [notes, setNotes] = useState<string>(null);
   const { data: todos } = useTodos(id, user?.id);
   const { toast } = useToast();
+
+  useEffect(()=>{
+    if(project?.notes){
+      setNotes(project.notes);
+    }
+  },[project?.notes])
 
   const handleSaveNotes = async () => {
     if (!project) return;
