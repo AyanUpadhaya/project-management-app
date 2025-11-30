@@ -3,9 +3,9 @@ export interface Note {
   user_id?: string;
   title: string;
   content: string;
-  created_at?: string | number;
-  updated_at?: string | number;
+  created_at: string;
+  updated_at: string;
 }
 
-const NOTES_KEY = "devtools_notes";
+
 

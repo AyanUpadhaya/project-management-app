@@ -1,7 +1,7 @@
-export function formatReadableDate(dateString) {
+export function formatReadableDate(dateString: string) {
   const date = new Date(dateString);
 
-  const options = {
+  const options: Intl.DateTimeFormatOptions = {
     weekday: "short",
     month: "long",
     day: "numeric",

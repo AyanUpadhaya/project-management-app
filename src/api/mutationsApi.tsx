@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/superbase/supabaseClient";
 import type {
@@ -225,12 +226,13 @@ export const useDeleteNote = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, userId }: { id: string; userId: string }) => {
+      console.log("Deleting note with id:", userId);
       const { error } = await supabase.from("notes").delete().eq("id", id);
       if (error) throw new Error(error.message);
 
       return { success: true };
     },
-    onSuccess: (data, variables, context) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["notes", variables.userId] });
     },
   });

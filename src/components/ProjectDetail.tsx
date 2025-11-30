@@ -37,7 +37,7 @@ export default function ProjectDetail() {
   const createTodoMutation = useCreateTodo();
   const updateTodoMutation = useUpdateTodo();
   const deleteTodoMutation = useDeleteTodo(id, user?.id);
-  const [notes, setNotes] = useState<string>(null);
+  const [notes, setNotes] = useState<string>("");
   const { data: todos } = useTodos(id, user?.id);
   const { toast } = useToast();
 

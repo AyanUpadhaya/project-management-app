@@ -26,6 +26,30 @@ export interface Todo {
   user_id?: string;
 }
 
+
+export interface Task {
+  id: number;
+  text: string;
+  createdAt: string;
+}
+
+export interface Board {
+  id: number;
+  title: string;
+  tasks: Task[];
+}
+
+export interface ProjectStruct {
+  id: number;
+  name: string;
+  boards: Board[];
+}
+
+export interface DraggedTask {
+  task: Task;
+  boardId: number;
+}
+
 export type UpdateProjectInput = Partial<Omit<Project, "created_at">> & {
   id: string | undefined;
 };
