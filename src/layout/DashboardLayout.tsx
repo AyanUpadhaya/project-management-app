@@ -1,10 +1,10 @@
-import { 
-  BookIcon, 
-  LogOutIcon, 
-  // MailIcon, 
-  Moon, 
-  NotebookIcon, 
-  Sun 
+import {
+  BookIcon,
+  LogOutIcon,
+  // MailIcon,
+  Moon,
+  NotebookIcon,
+  Sun,
 } from "lucide-react";
 // import {
 //   Dialog,
@@ -22,20 +22,17 @@ import { useDarkMode } from "@/context/DarkModeContext";
 
 const DashboardLayout = () => {
   const { toggleDarkMode, isDark } = useDarkMode();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   return (
     <div>
       <header className="py-4 sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex max-w-screen-2xl mx-auto items-center">
           <div className="flex justify-between w-full px-4">
-            <Link className="mr-6 flex items-center space-x-2" to="/">
-              <span className="hidden font-bold sm:inline-block">
-                Project Management
-              </span>
+            <Link className="mr-6 flex items-center text-2xl font-bold space-x-2" to="/">
+              <span className="hidden font-bold sm:inline-block">DevNexus</span>
             </Link>
 
             <div className="flex gap-3 items-center">
-         
               <Button
                 onClick={toggleDarkMode}
                 className={`p-2 rounded-lg transition-colors cursor-pointer ${

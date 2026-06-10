@@ -26,6 +26,7 @@ import {
   useUpdateTodo,
 } from "@/api/mutationsApi";
 import { useAuth } from "@/context/AuthProvider";
+import Loading from "./Loading";
 
 export default function ProjectDetail() {
   const { user } = useAuth();
@@ -167,7 +168,7 @@ export default function ProjectDetail() {
     }
   };
 
-  if (isLoading) return <p>Loading project...</p>;
+  if (isLoading) return <Loading />;
   if (!project || isError) return <p>Project not found.</p>;
 
   return (

@@ -16,6 +16,7 @@ import {
   useDeleteNote,
   useUpdateNote,
 } from "@/api/mutationsApi";
+import Loading from "@/components/Loading";
 
 function Notes() {
   const { isDark } = useDarkMode(); 
@@ -184,7 +185,7 @@ function Notes() {
   };
 
   if (isError) return <div>Error...</div>;
-  if (isLoading) return <p>Loading...</p>;
+  if (isLoading) return <Loading />;
 
   return (
     <div className="space-y-6">

@@ -6,13 +6,14 @@ import { emptyBox } from "@/assets/getAssets";
 
 import { useProjects } from "@/api/querysApi";
 import { useAuth } from "@/context/AuthProvider";
+import Loading from "@/components/Loading";
 
 const Home = () => {
   const { user } = useAuth();
 
   const { data, isLoading, isError } = useProjects(user?.id);
   if (isError) return <div>Error...</div>;
-  if (isLoading) return <p>Loading...</p>;
+  if (isLoading) return <Loading />;
   return (
     <div className="w-full p-4">
       <div className="space-y-4">
