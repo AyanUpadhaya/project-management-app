@@ -1,14 +1,21 @@
-import { BookIcon, LogOutIcon, MailIcon, Moon, NotebookIcon, Sun } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { 
+  BookIcon, 
+  LogOutIcon, 
+  // MailIcon, 
+  Moon, 
+  NotebookIcon, 
+  Sun 
+} from "lucide-react";
+// import {
+//   Dialog,
+//   DialogContent,
+//   DialogDescription,
+//   DialogHeader,
+//   DialogTitle,
+//   DialogTrigger,
+// } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import EmailSender from "@/components/EmailSender";
+// import EmailSender from "@/components/EmailSender";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { signOut } from "@/services/authService";
 import { useDarkMode } from "@/context/DarkModeContext";
@@ -69,7 +76,7 @@ const DashboardLayout = () => {
                 <span>Logout</span>
               </Button>
 
-              <Dialog>
+              {/* <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="outline">
                     <MailIcon className="w-4 h-4"></MailIcon>
@@ -85,7 +92,7 @@ const DashboardLayout = () => {
                   </DialogHeader>
                   <EmailSender />
                 </DialogContent>
-              </Dialog>
+              </Dialog> */}
             </div>
           </div>
         </div>
