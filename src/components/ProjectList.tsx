@@ -11,6 +11,8 @@ import { Link } from "react-router-dom";
 import EditProject from "./EditProject";
 import type { Project, ProjectStatus } from "@/types";
 import { Badge } from "@/components/ui/badge";
+import { truncateText } from "@/utils/truncate";
+
 
 type PropsType = {
   projects: Project[];
@@ -48,7 +50,7 @@ export default function ProjectList({ projects }: PropsType) {
               </div>
               <EditProject project={project}></EditProject>
             </CardTitle>
-            <CardDescription>{project.description}</CardDescription>
+            <CardDescription>{truncateText(project.description, 100)}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
