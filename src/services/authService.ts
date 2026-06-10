@@ -1,8 +1,7 @@
 // authService.js
-import { supabase } from "@/superbase/supabaseClient";
+import { supabase } from "@/supabase/supabaseClient";
 
-
-export const signUp = async (email:string, password:string) => {
+export const signUp = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -21,10 +20,8 @@ export const signIn = async (email: string, password: string) => {
 };
 
 export const signOut = async () => {
-  
   try {
     await supabase.auth.signOut();
-    
   } catch (error) {
     console.error(error);
   }

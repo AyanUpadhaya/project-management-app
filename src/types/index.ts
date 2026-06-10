@@ -41,9 +41,42 @@ export interface Board {
 
 export interface ProjectStruct {
   id: number;
-  name: string;
+  title: string;
+  description?: string | null;
   boards: Board[];
 }
+
+export interface TrelloProjectRow {
+  id: number;
+  title: string | null;
+  description: string | null;
+  user_id: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface TrelloBoardRow {
+  id: number;
+  title: string | null;
+  project_id: number | null;
+  position: number | null;
+  created_at: string;
+}
+
+export interface TrelloTaskRow {
+  id: number;
+  text: string | null;
+  board_id: number | null;
+  position: number | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export type UpdateTrelloProjectInput = {
+  id: number;
+  title?: string;
+  description?: string | null;
+};
 
 export interface DraggedTask {
   task: Task;

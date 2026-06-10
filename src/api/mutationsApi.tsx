@@ -1,12 +1,12 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/superbase/supabaseClient";
+import { supabase } from "@/supabase/supabaseClient";
 import type {
   Project,
   Todo,
   UpdateNoteInput,
   UpdateProjectInput,
   UpdateTodoInput,
+  UpdateTrelloProjectInput,
 } from "@/types";
 import type { Note } from "@/utils/notesStorage";
 
@@ -138,7 +138,7 @@ export const useUpdateTodo = () => {
 
 export const useDeleteTodo = (
   project_id: string | undefined,
-  user_id: string | undefined
+  user_id: string | undefined,
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -173,6 +173,232 @@ export const useDeleteTodo = (
       queryClient.invalidateQueries({
         queryKey: ["todos", project_id, user_id],
       });
+    },
+  });
+};
+
+const DEFAULT_TRELLO_BOARD_TITLES = ["To Do", "In Progress", "Done"];
+
+const invalidateTrelloProjects = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  userId?: string,
+) => {
+  queryClient.invalidateQueries({
+    queryKey: userId ? ["trello_projects", userId] : ["trello_projects"],
+  });
+};
+
+// trello
+export const useCreateTrelloProject = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      title,
+      user_id,
+      description,
+    }: {
+      title: string;
+      user_id: string;
+      description?: string | null;
+    }) => {
+      const { data: project, error } = await supabase
+        .from("trello_projects")
+        .insert([{ title, user_id, description: description ?? null }])
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+
+      const { error: boardsError } = await supabase.from("boards").insert(
+        DEFAULT_TRELLO_BOARD_TITLES.map((boardTitle, index) => ({
+          title: boardTitle,
+          project_id: project.id,
+          position: index,
+        })),
+      );
+
+      if (boardsError) throw new Error(boardsError.message);
+      return project;
+    },
+    onSuccess: (newProject) => {
+      invalidateTrelloProjects(queryClient, newProject.user_id);
+    },
+  });
+};
+
+export const useUpdateTrelloProject = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: UpdateTrelloProjectInput) => {
+      const { data, error } = await supabase
+        .from("trello_projects")
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: (updatedProject) => {
+      invalidateTrelloProjects(queryClient, updatedProject.user_id);
+    },
+  });
+};
+
+export const useDeleteTrelloProject = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const { error } = await supabase
+        .from("trello_projects")
+        .delete()
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+      return id;
+    },
+    onSuccess: () => {
+      invalidateTrelloProjects(queryClient);
+    },
+  });
+};
+
+export const useCreateTrelloBoard = (userId: string | undefined) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      project_id,
+      title,
+      position,
+    }: {
+      project_id: number;
+      title: string;
+      position: number;
+    }) => {
+      const { data, error } = await supabase
+        .from("boards")
+        .insert([{ project_id, title, position }])
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      invalidateTrelloProjects(queryClient, userId);
+    },
+  });
+};
+
+export const useUpdateTrelloBoard = (userId: string | undefined) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      title,
+    }: {
+      id: number;
+      title: string;
+    }) => {
+      const { data, error } = await supabase
+        .from("boards")
+        .update({ title })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      invalidateTrelloProjects(queryClient, userId);
+    },
+  });
+};
+
+export const useDeleteTrelloBoard = (userId: string | undefined) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const { error } = await supabase.from("boards").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+      return id;
+    },
+    onSuccess: () => {
+      invalidateTrelloProjects(queryClient, userId);
+    },
+  });
+};
+
+export const useCreateTrelloTask = (userId: string | undefined) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      board_id,
+      text,
+      position,
+    }: {
+      board_id: number;
+      text: string;
+      position: number;
+    }) => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .insert([{ board_id, text, position }])
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      invalidateTrelloProjects(queryClient, userId);
+    },
+  });
+};
+
+export const useDeleteTrelloTask = (userId: string | undefined) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const { error } = await supabase.from("tasks").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+      return id;
+    },
+    onSuccess: () => {
+      invalidateTrelloProjects(queryClient, userId);
+    },
+  });
+};
+
+export const useMoveTrelloTask = (userId: string | undefined) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      board_id,
+      position,
+    }: {
+      id: number;
+      board_id: number;
+      position: number;
+    }) => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .update({
+          board_id,
+          position,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      invalidateTrelloProjects(queryClient, userId);
     },
   });
 };

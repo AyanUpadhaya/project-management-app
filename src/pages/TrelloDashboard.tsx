@@ -1,163 +1,122 @@
 import React, { useState } from 'react';
 import { Plus, X, Trash2, FolderOpen } from 'lucide-react';
 import { useDarkMode } from '@/context/DarkModeContext';
-
-interface Task {
-  id: number;
-  text: string;
-  createdAt: string;
-}
-
-interface Board {
-  id: number;
-  title: string;
-  tasks: Task[];
-}
-
-interface Project {
-  id: number;
-  name: string;
-  boards: Board[];
-}
-
-interface DraggedTask {
-  task: Task;
-  boardId: number;
-}
+import { useAuth } from '@/context/AuthProvider';
+import { useTrelloProjects } from '@/api/querysApi';
+import {
+  useCreateTrelloBoard,
+  useCreateTrelloProject,
+  useCreateTrelloTask,
+  useDeleteTrelloBoard,
+  useDeleteTrelloProject,
+  useDeleteTrelloTask,
+  useMoveTrelloTask,
+  useUpdateTrelloBoard,
+} from '@/api/mutationsApi';
+import type { Board, DraggedTask, Task } from '@/types';
 
 export default function TrelloDashboard() {
-  const { isDark:darkMode } = useDarkMode()
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [newProjectName, setNewProjectName] = useState<string>('');
+  const { isDark: darkMode } = useDarkMode();
+  const { user } = useAuth();
+  const { data: projects = [], isLoading, isError } = useTrelloProjects(user?.id);
+  const createProjectMutation = useCreateTrelloProject();
+  const deleteProjectMutation = useDeleteTrelloProject();
+  const createBoardMutation = useCreateTrelloBoard(user?.id);
+  const updateBoardMutation = useUpdateTrelloBoard(user?.id);
+  const deleteBoardMutation = useDeleteTrelloBoard(user?.id);
+  const createTaskMutation = useCreateTrelloTask(user?.id);
+  const deleteTaskMutation = useDeleteTrelloTask(user?.id);
+  const moveTaskMutation = useMoveTrelloTask(user?.id);
+
+  const isSaving =
+    createProjectMutation.isPending ||
+    deleteProjectMutation.isPending ||
+    createBoardMutation.isPending ||
+    updateBoardMutation.isPending ||
+    deleteBoardMutation.isPending ||
+    createTaskMutation.isPending ||
+    deleteTaskMutation.isPending ||
+    moveTaskMutation.isPending;
+
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [newProjectTitle, setNewProjectTitle] = useState<string>('');
   const [showProjectForm, setShowProjectForm] = useState<boolean>(false);
   const [draggedTask, setDraggedTask] = useState<DraggedTask | null>(null);
 
-  // Project Management
-  const createProject = (): void => {
-    if (newProjectName.trim()) {
-      const newProject: Project = {
-        id: Date.now(),
-        name: newProjectName,
-        boards: [
-          { id: 1, title: 'To Do', tasks: [] },
-          { id: 2, title: 'In Progress', tasks: [] },
-          { id: 3, title: 'Done', tasks: [] }
-        ]
-      };
-      setProjects([...projects, newProject]);
-      setNewProjectName('');
-      setShowProjectForm(false);
+  const selectedProject =
+    projects.find((p) => p.id === selectedProjectId) ?? null;
+
+  const createProject = async (): Promise<void> => {
+    if (!newProjectTitle.trim() || !user?.id) return;
+
+    await createProjectMutation.mutateAsync({
+      title: newProjectTitle.trim(),
+      user_id: user.id,
+    });
+    setNewProjectTitle('');
+    setShowProjectForm(false);
+  };
+
+  const deleteProject = async (projectId: number): Promise<void> => {
+    await deleteProjectMutation.mutateAsync({ id: projectId });
+    if (selectedProjectId === projectId) {
+      setSelectedProjectId(null);
     }
   };
 
-  const deleteProject = (projectId: number): void => {
-    setProjects(projects.filter(p => p.id !== projectId));
-    if (selectedProject?.id === projectId) {
-      setSelectedProject(null);
-    }
+  const addBoard = async (): Promise<void> => {
+    if (!selectedProject) return;
+
+    await createBoardMutation.mutateAsync({
+      project_id: selectedProject.id,
+      title: 'New Board',
+      position: selectedProject.boards.length,
+    });
   };
 
-  // Board Management
-  const addBoard = (): void => {
-    if (selectedProject) {
-      const updatedProject: Project = {
-        ...selectedProject,
-        boards: [...selectedProject.boards, {
-          id: Date.now(),
-          title: 'New Board',
-          tasks: []
-        }]
-      };
-      updateProject(updatedProject);
-    }
+  const deleteBoard = async (boardId: number): Promise<void> => {
+    await deleteBoardMutation.mutateAsync({ id: boardId });
   };
 
-  const deleteBoard = (boardId: number): void => {
-    if (selectedProject) {
-      const updatedProject: Project = {
-        ...selectedProject,
-        boards: selectedProject.boards.filter(b => b.id !== boardId)
-      };
-      updateProject(updatedProject);
-    }
+  const updateBoardTitle = async (
+    boardId: number,
+    newTitle: string,
+  ): Promise<void> => {
+    await updateBoardMutation.mutateAsync({ id: boardId, title: newTitle });
   };
 
-  const updateBoardTitle = (boardId: number, newTitle: string): void => {
-    if (selectedProject) {
-      const updatedProject: Project = {
-        ...selectedProject,
-        boards: selectedProject.boards.map(b =>
-          b.id === boardId ? { ...b, title: newTitle } : b
-        )
-      };
-      updateProject(updatedProject);
-    }
+  const addTask = async (boardId: number, taskText: string): Promise<void> => {
+    if (!selectedProject || !taskText.trim()) return;
+
+    const board = selectedProject.boards.find((b) => b.id === boardId);
+    if (!board) return;
+
+    await createTaskMutation.mutateAsync({
+      board_id: boardId,
+      text: taskText.trim(),
+      position: board.tasks.length,
+    });
   };
 
-  // Task Management
-  const addTask = (boardId: number, taskText: string): void => {
-    if (selectedProject && taskText.trim()) {
-      const updatedProject: Project = {
-        ...selectedProject,
-        boards: selectedProject.boards.map(b =>
-          b.id === boardId
-            ? {
-                ...b,
-                tasks: [...b.tasks, {
-                  id: Date.now(),
-                  text: taskText,
-                  createdAt: new Date().toISOString()
-                }]
-              }
-            : b
-        )
-      };
-      updateProject(updatedProject);
-    }
+  const deleteTask = async (_boardId: number, taskId: number): Promise<void> => {
+    await deleteTaskMutation.mutateAsync({ id: taskId });
   };
 
-  const deleteTask = (boardId: number, taskId: number): void => {
-    if (selectedProject) {
-      const updatedProject: Project = {
-        ...selectedProject,
-        boards: selectedProject.boards.map(b =>
-          b.id === boardId
-            ? { ...b, tasks: b.tasks.filter(t => t.id !== taskId) }
-            : b
-        )
-      };
-      updateProject(updatedProject);
-    }
-  };
+  const moveTask = async (
+    taskId: number,
+    _fromBoardId: number,
+    toBoardId: number,
+  ): Promise<void> => {
+    if (!selectedProject) return;
 
-  const moveTask = (taskId: number, fromBoardId: number, toBoardId: number): void => {
-    if (selectedProject) {
-      const fromBoard = selectedProject.boards.find(b => b.id === fromBoardId);
-      if (!fromBoard) return;
-      
-      const task = fromBoard.tasks.find(t => t.id === taskId);
-      if (!task) return;
-      
-      const updatedProject: Project = {
-        ...selectedProject,
-        boards: selectedProject.boards.map(b => {
-          if (b.id === fromBoardId) {
-            return { ...b, tasks: b.tasks.filter(t => t.id !== taskId) };
-          }
-          if (b.id === toBoardId) {
-            return { ...b, tasks: [...b.tasks, task] };
-          }
-          return b;
-        })
-      };
-      updateProject(updatedProject);
-    }
-  };
+    const toBoard = selectedProject.boards.find((b) => b.id === toBoardId);
+    if (!toBoard) return;
 
-  const updateProject = (updatedProject: Project): void => {
-    setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p));
-    setSelectedProject(updatedProject);
+    await moveTaskMutation.mutateAsync({
+      id: taskId,
+      board_id: toBoardId,
+      position: toBoard.tasks.length,
+    });
   };
 
   const handleDragStart = (task: Task, boardId: number): void => {
@@ -170,15 +129,38 @@ export default function TrelloDashboard() {
 
   const handleDrop = (toBoardId: number): void => {
     if (draggedTask && draggedTask.boardId !== toBoardId) {
-      moveTask(draggedTask.task.id, draggedTask.boardId, toBoardId);
+      void moveTask(draggedTask.task.id, draggedTask.boardId, toBoardId);
     }
     setDraggedTask(null);
   };
 
+  if (isLoading) {
+    return (
+      <div
+        className={`min-h-screen flex items-center justify-center ${
+          darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800'
+        } rounded-2xl`}
+      >
+        Loading...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div
+        className={`min-h-screen flex items-center justify-center ${
+          darkMode ? 'bg-gray-900 text-red-400' : 'bg-gradient-to-br from-blue-50 to-indigo-100 text-red-600'
+        } rounded-2xl`}
+      >
+        Failed to load Trello projects.
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 to-indigo-100'} rounded-2xl`}>
       {!selectedProject ? (
-        // Projects View
         <div className="p-8">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between mb-8">
@@ -186,10 +168,10 @@ export default function TrelloDashboard() {
                 Trello
               </h1>
               <div className="flex items-center gap-4">
-                
                 <button
                   onClick={() => setShowProjectForm(true)}
-                  className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg"
+                  disabled={createProjectMutation.isPending}
+                  className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg disabled:opacity-50"
                 >
                   <Plus size={20} />
                   New Project
@@ -205,31 +187,32 @@ export default function TrelloDashboard() {
                 <div className="flex gap-3">
                   <input
                     type="text"
-                    value={newProjectName}
-                    onChange={(e) => setNewProjectName(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && createProject()}
+                    value={newProjectTitle}
+                    onChange={(e) => setNewProjectTitle(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && void createProject()}
                     placeholder="Project name..."
                     className={`flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                      darkMode 
-                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      darkMode
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                         : 'bg-white border-gray-300 text-gray-900'
                     }`}
                     autoFocus
                   />
                   <button
-                    onClick={createProject}
-                    className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                    onClick={() => void createProject()}
+                    disabled={createProjectMutation.isPending}
+                    className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
                   >
                     Create
                   </button>
                   <button
                     onClick={() => {
                       setShowProjectForm(false);
-                      setNewProjectName('');
+                      setNewProjectTitle('');
                     }}
                     className={`px-6 py-2 rounded-lg transition-colors ${
-                      darkMode 
-                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                      darkMode
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                   >
@@ -240,33 +223,35 @@ export default function TrelloDashboard() {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.map(project => (
+              {projects.map((project) => (
                 <div
                   key={project.id}
                   className={`${
                     darkMode ? 'bg-gray-800' : 'bg-white'
                   } rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer`}
-                  onClick={() => setSelectedProject(project)}
+                  onClick={() => setSelectedProjectId(project.id)}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <FolderOpen className="text-indigo-600" size={24} />
                       <h3 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                        {project.name}
+                        {project.title}
                       </h3>
                     </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteProject(project.id);
+                        void deleteProject(project.id);
                       }}
-                      className="text-red-500 hover:text-red-700 transition-colors"
+                      disabled={deleteProjectMutation.isPending}
+                      className="text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
                     >
                       <Trash2 size={18} />
                     </button>
                   </div>
                   <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {project.boards.length} boards • {project.boards.reduce((sum, b) => sum + b.tasks.length, 0)} tasks
+                    {project.boards.length} boards •{' '}
+                    {project.boards.reduce((sum, b) => sum + b.tasks.length, 0)} tasks
                   </div>
                 </div>
               ))}
@@ -286,12 +271,11 @@ export default function TrelloDashboard() {
           </div>
         </div>
       ) : (
-        // Board View
         <div className="flex flex-col h-screen">
           <div className={`${darkMode ? 'bg-gray-800 border-b border-gray-700' : 'bg-white'} shadow-md px-8 py-4 flex items-center justify-between`}>
             <div className="flex items-center gap-4">
               <button
-                onClick={() => setSelectedProject(null)}
+                onClick={() => setSelectedProjectId(null)}
                 className={`transition-colors ${
                   darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'
                 }`}
@@ -299,14 +283,14 @@ export default function TrelloDashboard() {
                 ← Back
               </button>
               <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                {selectedProject.name}
+                {selectedProject.title}
               </h1>
             </div>
             <div className="flex items-center gap-4">
-             
               <button
-                onClick={addBoard}
-                className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                onClick={() => void addBoard()}
+                disabled={isSaving}
+                className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
               >
                 <Plus size={18} />
                 Add Board
@@ -316,11 +300,12 @@ export default function TrelloDashboard() {
 
           <div className="flex-1 overflow-x-auto p-8">
             <div className="flex gap-6 h-full">
-              {selectedProject.boards.map(board => (
+              {selectedProject.boards.map((board) => (
                 <BoardComponent
                   key={board.id}
                   board={board}
                   darkMode={darkMode}
+                  isSaving={isSaving}
                   onDeleteBoard={deleteBoard}
                   onUpdateTitle={updateBoardTitle}
                   onAddTask={addTask}
@@ -342,6 +327,7 @@ export default function TrelloDashboard() {
 interface BoardProps {
   board: Board;
   darkMode: boolean;
+  isSaving: boolean;
   onDeleteBoard: (boardId: number) => void;
   onUpdateTitle: (boardId: number, newTitle: string) => void;
   onAddTask: (boardId: number, taskText: string) => void;
@@ -352,17 +338,18 @@ interface BoardProps {
   isDragging: boolean;
 }
 
-function BoardComponent({ 
-  board, 
-  darkMode, 
-  onDeleteBoard, 
-  onUpdateTitle, 
-  onAddTask, 
-  onDeleteTask, 
-  onDragStart, 
-  onDragEnd, 
-  onDrop, 
-  isDragging 
+function BoardComponent({
+  board,
+  darkMode,
+  isSaving,
+  onDeleteBoard,
+  onUpdateTitle,
+  onAddTask,
+  onDeleteTask,
+  onDragStart,
+  onDragEnd,
+  onDrop,
+  isDragging,
 }: BoardProps) {
   const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
   const [title, setTitle] = useState<string>(board.title);
@@ -372,14 +359,14 @@ function BoardComponent({
 
   const handleTitleSubmit = (): void => {
     if (title.trim()) {
-      onUpdateTitle(board.id, title);
+      void onUpdateTitle(board.id, title);
       setIsEditingTitle(false);
     }
   };
 
   const handleAddTask = (): void => {
     if (newTaskText.trim()) {
-      onAddTask(board.id, newTaskText);
+      void onAddTask(board.id, newTaskText);
       setNewTaskText('');
       setShowTaskForm(false);
     }
@@ -404,7 +391,7 @@ function BoardComponent({
     <div
       className={`${
         darkMode ? 'bg-gray-800' : 'bg-gray-100'
-      } rounded-lg p-4 w-80 flex-shrink-0 flex flex-col max-h-full transition-all ${
+      } rounded-lg p-4 w-80 flex-1 flex flex-col max-h-full transition-all ${
         isDragOver ? 'ring-2 ring-indigo-500 scale-105' : ''
       }`}
       onDragOver={handleDragOver}
@@ -419,9 +406,10 @@ function BoardComponent({
             onChange={(e) => setTitle(e.target.value)}
             onBlur={handleTitleSubmit}
             onKeyPress={(e) => e.key === 'Enter' && handleTitleSubmit()}
+            disabled={isSaving}
             className={`flex-1 px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-              darkMode 
-                ? 'bg-gray-700 border-gray-600 text-white' 
+              darkMode
+                ? 'bg-gray-700 border-gray-600 text-white'
                 : 'bg-white border-gray-300 text-gray-900'
             }`}
             autoFocus
@@ -437,8 +425,9 @@ function BoardComponent({
           </h3>
         )}
         <button
-          onClick={() => onDeleteBoard(board.id)}
-          className={`transition-colors ${
+          onClick={() => void onDeleteBoard(board.id)}
+          disabled={isSaving}
+          className={`transition-colors disabled:opacity-50 ${
             darkMode ? 'text-gray-400 hover:text-red-500' : 'text-gray-500 hover:text-red-600'
           }`}
         >
@@ -447,7 +436,7 @@ function BoardComponent({
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-        {board.tasks.map(task => (
+        {board.tasks.map((task) => (
           <TaskComponent
             key={task.id}
             task={task}
@@ -459,9 +448,11 @@ function BoardComponent({
           />
         ))}
         {board.tasks.length === 0 && isDragging && (
-          <div className={`text-center py-8 border-2 border-dashed rounded-lg ${
-            darkMode ? 'border-gray-600 text-gray-500' : 'border-gray-300 text-gray-400'
-          }`}>
+          <div
+            className={`text-center py-8 border-2 border-dashed rounded-lg ${
+              darkMode ? 'border-gray-600 text-gray-500' : 'border-gray-300 text-gray-400'
+            }`}
+          >
             Drop task here
           </div>
         )}
@@ -473,9 +464,10 @@ function BoardComponent({
             value={newTaskText}
             onChange={(e) => setNewTaskText(e.target.value)}
             placeholder="Enter task description..."
+            disabled={isSaving}
             className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none ${
-              darkMode 
-                ? 'bg-gray-600 border-gray-500 text-white placeholder-gray-400' 
+              darkMode
+                ? 'bg-gray-600 border-gray-500 text-white placeholder-gray-400'
                 : 'bg-white border-gray-300 text-gray-900'
             }`}
             rows={3}
@@ -484,7 +476,8 @@ function BoardComponent({
           <div className="flex gap-2 mt-2">
             <button
               onClick={handleAddTask}
-              className="bg-indigo-600 text-white px-4 py-1 rounded hover:bg-indigo-700 transition-colors text-sm"
+              disabled={isSaving}
+              className="bg-indigo-600 text-white px-4 py-1 rounded hover:bg-indigo-700 transition-colors text-sm disabled:opacity-50"
             >
               Add
             </button>
@@ -494,8 +487,8 @@ function BoardComponent({
                 setNewTaskText('');
               }}
               className={`px-4 py-1 rounded transition-colors text-sm ${
-                darkMode 
-                  ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' 
+                darkMode
+                  ? 'bg-gray-600 text-gray-300 hover:bg-gray-500'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
@@ -506,7 +499,8 @@ function BoardComponent({
       ) : (
         <button
           onClick={() => setShowTaskForm(true)}
-          className={`flex items-center gap-2 transition-colors ${
+          disabled={isSaving}
+          className={`flex items-center gap-2 transition-colors disabled:opacity-50 ${
             darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-800'
           }`}
         >
@@ -527,7 +521,14 @@ interface TaskProps {
   onDragEnd: () => void;
 }
 
-function TaskComponent({ task, boardId, darkMode, onDelete, onDragStart, onDragEnd }: TaskProps) {
+function TaskComponent({
+  task,
+  boardId,
+  darkMode,
+  onDelete,
+  onDragStart,
+  onDragEnd,
+}: TaskProps) {
   return (
     <div
       draggable
@@ -542,7 +543,7 @@ function TaskComponent({ task, boardId, darkMode, onDelete, onDragStart, onDragE
       </p>
       <div className="flex items-center justify-end">
         <button
-          onClick={() => onDelete(boardId, task.id)}
+          onClick={() => void onDelete(boardId, task.id)}
           className={`transition-colors opacity-0 group-hover:opacity-100 ${
             darkMode ? 'text-gray-400 hover:text-red-500' : 'text-gray-400 hover:text-red-600'
           }`}
