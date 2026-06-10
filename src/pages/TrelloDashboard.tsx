@@ -278,7 +278,7 @@ export default function TrelloDashboard() {
                 onClick={() => setSelectedProjectId(null)}
                 className={`transition-colors ${
                   darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'
-                }`}
+                } cursor-pointer`}
               >
                 ← Back
               </button>
