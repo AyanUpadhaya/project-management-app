@@ -58,7 +58,7 @@ export default function ProjectList({ projects }: PropsType) {
               <span className="text-sm font-medium">{project.progress}%</span>
             </div>
             <Progress value={project.progress} className="mt-2" />
-            <div className="py-3">
+            <div className="py-3 flex flex-wrap gap-2">
               {project.tags.map((badge) => (
                 <Badge key={badge} variant="secondary">
                   {badge}

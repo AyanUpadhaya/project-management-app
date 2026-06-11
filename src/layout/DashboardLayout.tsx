@@ -1,24 +1,16 @@
 import {
   BookIcon,
   LogOutIcon,
-  // MailIcon,
   Moon,
   NotebookIcon,
   Sun,
 } from "lucide-react";
-// import {
-//   Dialog,
-//   DialogContent,
-//   DialogDescription,
-//   DialogHeader,
-//   DialogTitle,
-//   DialogTrigger,
-// } from "@/components/ui/dialog";
+
 import { Button } from "@/components/ui/button";
-// import EmailSender from "@/components/EmailSender";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { signOut } from "@/services/authService";
 import { useDarkMode } from "@/context/DarkModeContext";
+import SendMail from "@/components/SendMail";
 
 const DashboardLayout = () => {
   const { toggleDarkMode, isDark } = useDarkMode();
@@ -73,23 +65,7 @@ const DashboardLayout = () => {
                 <span>Logout</span>
               </Button>
 
-              {/* <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline">
-                    <MailIcon className="w-4 h-4"></MailIcon>
-                    <span>Send Email</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[625px]">
-                  <DialogHeader>
-                    <DialogTitle>Send Email</DialogTitle>
-                    <DialogDescription>
-                      Fill in the details below to send an email.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <EmailSender />
-                </DialogContent>
-              </Dialog> */}
+             <SendMail />
             </div>
           </div>
         </div>
