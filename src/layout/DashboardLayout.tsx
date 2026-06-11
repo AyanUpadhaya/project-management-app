@@ -11,16 +11,24 @@ import { Link, Outlet, useNavigate } from "react-router-dom";
 import { signOut } from "@/services/authService";
 import { useDarkMode } from "@/context/DarkModeContext";
 import SendMail from "@/components/SendMail";
+import { useAuth } from "@/context/AuthProvider";
+
 
 const DashboardLayout = () => {
   const { toggleDarkMode, isDark } = useDarkMode();
   const navigate = useNavigate();
+  const {user} = useAuth();
+  const MAIN_USER_ID = "38c6e5c1-6897-4075-acae-e591f827167f";
+  const isMainUser = user && user?.id == MAIN_USER_ID
   return (
     <div>
       <header className="py-4 sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex max-w-screen-2xl mx-auto items-center">
           <div className="flex justify-between w-full px-4">
-            <Link className="mr-6 flex items-center text-2xl font-bold space-x-2" to="/">
+            <Link
+              className="mr-6 flex items-center text-2xl font-bold space-x-2"
+              to="/"
+            >
               <span className="hidden font-bold sm:inline-block">DevNexus</span>
             </Link>
 
@@ -65,7 +73,7 @@ const DashboardLayout = () => {
                 <span>Logout</span>
               </Button>
 
-             <SendMail />
+              {isMainUser && <SendMail />}
             </div>
           </div>
         </div>
