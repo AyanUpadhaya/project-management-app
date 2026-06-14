@@ -15,6 +15,8 @@ import ResetPassword from "./pages/ResetPassword";
 import { DarkModeProvider } from "./context/DarkModeContext";
 import Notes from "./pages/Notes";
 import TrelloDashboard from "./pages/TrelloDashboard";
+import BookMarksManager from "./pages/BookMarksManager";
+
 
 const queryClient = new QueryClient();
 function App() {
@@ -38,8 +40,10 @@ function App() {
                 <Route index element={<Home></Home>} />
                 <Route path="/project/:id" element={<ProjectDetail />} />
                 <Route path="/notes" element={<Notes />} />
+                <Route path="/bookmarks" element={<BookMarksManager />} />
                 <Route path="/trello" element={<TrelloDashboard />} />
               </Route>
+             
               {/* login */}
               <Route
                 path="/login"
