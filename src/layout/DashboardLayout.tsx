@@ -22,7 +22,7 @@ const DashboardLayout = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const MAIN_USER_ID = "38c6e5c1-6897-4075-acae-e591f827167f";
+  const MAIN_USER_ID = import.meta.env.VITE_MAIN_USER_ID;
   const isMainUser = user && user?.id == MAIN_USER_ID;
   return (
     <div>
