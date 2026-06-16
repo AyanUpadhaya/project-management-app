@@ -32,7 +32,7 @@ const Home = () => {
               <img
                 src={emptyBox}
                 alt="empty box"
-                className="w-[100px] h-[100px] object-cover"
+                className="w-25 h-25 object-cover"
               />
             </div>
           )}

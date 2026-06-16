@@ -82,7 +82,10 @@ const assembleTrelloProjects = async (
   if (boardsError) throw new Error(boardsError.message);
 
   const boardIds = boards?.map((board) => board.id) ?? [];
-  const tasksByBoard = new Map<number, ProjectStruct["boards"][number]["tasks"]>();
+  const tasksByBoard = new Map<
+    number,
+    ProjectStruct["boards"][number]["tasks"]
+  >();
 
   if (boardIds.length > 0) {
     const { data: tasks, error: tasksError } = await supabase
@@ -133,6 +136,23 @@ export const useNotes = (userId: string | undefined) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("notes")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(error.message);
+      return data;
+    },
+  });
+};
+
+//bookmarks
+
+export const useBookMarks = (userId: string | undefined) => {
+  return useQuery({
+    queryKey: ["bookmarks", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bookmarks")
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });

@@ -1,8 +1,8 @@
-import { 
-  useEffect, 
-  useMemo, 
-  //useRef, 
-  useState 
+import {
+  useEffect,
+  useMemo,
+  //useRef,
+  useState,
 } from "react";
 import {
   Bookmark as BookmarkIcon,
@@ -40,7 +40,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -74,11 +80,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import {
   CATEGORIES,
-  MOCK_BOOKMARKS,
   RESOURCE_TYPES,
   domainOf,
   faviconOf,
@@ -88,11 +98,15 @@ import {
   type ResourceType,
 } from "@/lib/bookmarks-data";
 import { cn } from "@/lib/utils";
-
+import { useBookMarks } from "@/api/querysApi";
+import { useAuth } from "@/context/AuthProvider";
 
 type SortOption = "newest" | "oldest" | "most-visited" | "alphabetical";
 
-const TYPE_ICON: Record<ResourceType, React.ComponentType<{ className?: string }>> = {
+const TYPE_ICON: Record<
+  ResourceType,
+  React.ComponentType<{ className?: string }>
+> = {
   "GitHub Repository": Github,
   Documentation: BookOpen,
   Article: FileText,
@@ -104,247 +118,6 @@ const TYPE_ICON: Record<ResourceType, React.ComponentType<{ className?: string }
   Other: Globe,
 };
 
-export default function BookMarksManager() {
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>(MOCK_BOOKMARKS);
-  const [loading] = useState(false);
-  const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState<"all" | Category>("all");
-  const [typeFilter, setTypeFilter] = useState<"all" | ResourceType>("all");
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [sort, setSort] = useState<SortOption>("newest");
-
-  const [editing, setEditing] = useState<Bookmark | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [detailsId, setDetailsId] = useState<string | null>(null);
-
-  const stats = useMemo(() => {
-    const total = bookmarks.length;
-    const favorites = bookmarks.filter((b) => b.is_favorite).length;
-    const categories = new Set(bookmarks.map((b) => b.category)).size;
-    const lastWeek = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const recent = bookmarks.filter((b) => new Date(b.created_at).getTime() > lastWeek).length;
-    return { total, favorites, categories, recent };
-  }, [bookmarks]);
-
-  const filtered = useMemo(() => {
-    let list = bookmarks.slice();
-    if (activeCategory !== "all") list = list.filter((b) => b.category === activeCategory);
-    if (typeFilter !== "all") list = list.filter((b) => b.resource_type === typeFilter);
-    if (favoritesOnly) list = list.filter((b) => b.is_favorite);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (b) =>
-          b.title.toLowerCase().includes(q) ||
-          b.description.toLowerCase().includes(q) ||
-          b.url.toLowerCase().includes(q) ||
-          b.tags.some((t) => t.toLowerCase().includes(q)),
-      );
-    }
-    list.sort((a, b) => {
-      switch (sort) {
-        case "oldest":
-          return +new Date(a.created_at) - +new Date(b.created_at);
-        case "most-visited":
-          return b.visit_count - a.visit_count;
-        case "alphabetical":
-          return a.title.localeCompare(b.title);
-        case "newest":
-        default:
-          return +new Date(b.created_at) - +new Date(a.created_at);
-      }
-    });
-    return list;
-  }, [bookmarks, activeCategory, typeFilter, favoritesOnly, search, sort]);
-
-  const details = detailsId ? bookmarks.find((b) => b.id === detailsId) ?? null : null;
-
-  const toggleFavorite = (id: string) =>
-    setBookmarks((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, is_favorite: !b.is_favorite } : b)),
-    );
-  const deleteBookmark = (id: string) =>
-    setBookmarks((prev) => prev.filter((b) => b.id !== id));
-  const copyUrl = (url: string) => {
-    if (typeof navigator !== "undefined") navigator.clipboard?.writeText(url).catch(() => {});
-  };
-
-  const openAdd = () => {
-    setEditing(null);
-    setModalOpen(true);
-  };
-  const openEdit = (b: Bookmark) => {
-    setEditing(b);
-    setModalOpen(true);
-  };
-
-  const saveBookmark = (data: BookmarkFormValues) => {
-    if (editing) {
-      setBookmarks((prev) =>
-        prev.map((b) =>
-          b.id === editing.id
-            ? { ...b, ...data, tags: data.tags, updated_at: new Date().toISOString() }
-            : b,
-        ),
-      );
-    } else {
-      const now = new Date().toISOString();
-      const next: Bookmark = {
-        id: crypto.randomUUID(),
-        ...data,
-        visit_count: 0,
-        created_at: now,
-        updated_at: now,
-      };
-      setBookmarks((prev) => [next, ...prev]);
-    }
-    setModalOpen(false);
-    setEditing(null);
-  };
-
-  // const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const exportCsv = () => {
-    const csv = bookmarksToCsv(bookmarks);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    const date = new Date().toISOString().slice(0, 10);
-    a.href = url;
-    a.download = `devnexus-bookmarks-${date}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  // const importCsv = async (file: File) => {
-  //   try {
-  //     const text = await file.text();
-  //     const imported = csvToBookmarks(text);
-  //     if (imported.length === 0) {
-  //       alert("No valid bookmarks found in CSV.");
-  //       return;
-  //     }
-  //     setBookmarks((prev) => {
-  //       const existingUrls = new Set(prev.map((b) => b.url));
-  //       const fresh = imported.filter((b) => !existingUrls.has(b.url));
-  //       return [...fresh, ...prev];
-  //     });
-  //     alert(`Imported ${imported.length} bookmark(s).`);
-  //   } catch (err) {
-  //     alert(`Failed to import CSV: ${(err as Error).message}`);
-  //   }
-  // };
-
-  return (
-    <TooltipProvider delayDuration={150}>
-      <div className="min-h-screen w-full">
-        {/* Main */}
-          <main className="min-w-0 flex-1">
-            <div className="space-y-8 px-4 py-8 md:px-8">
-              <Header
-                onAdd={openAdd}
-                onExport={exportCsv}
-                // onImport={() => fileInputRef.current?.click()}
-              />
-              {/* <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,text/csv"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) importCsv(f);
-                  e.target.value = "";
-                }}
-              /> */}
-
-
-              <StatsRow loading={loading} stats={stats} />
-
-              {/* <QuickActions
-                onAdd={openAdd}
-                onFavorites={() => setFavoritesOnly(true)}
-                onRecent={() => setSort("newest")}
-                onMostVisited={() => setSort("most-visited")}
-              /> */}
-
-              <FilterBar
-                search={search}
-                setSearch={setSearch}
-                category={activeCategory}
-                setCategory={setActiveCategory}
-                type={typeFilter}
-                setType={setTypeFilter}
-                favoritesOnly={favoritesOnly}
-                setFavoritesOnly={setFavoritesOnly}
-                sort={sort}
-                setSort={setSort}
-              />
-
-              {loading ? (
-                <SkeletonGrid />
-              ) : filtered.length === 0 ? (
-                <EmptyState onAdd={openAdd} />
-              ) : (
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                  {filtered.map((b) => (
-                    <BookmarkCard
-                      key={b.id}
-                      bookmark={b}
-                      onOpenDetails={() => setDetailsId(b.id)}
-                      onToggleFavorite={() => toggleFavorite(b.id)}
-                      onEdit={() => openEdit(b)}
-                      onDelete={() => deleteBookmark(b.id)}
-                      onCopy={() => copyUrl(b.url)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </main>
-
-        <BookmarkFormDialog
-          open={modalOpen}
-          onOpenChange={setModalOpen}
-          initial={editing}
-          onSubmit={saveBookmark}
-        />
-
-        <BookmarkDetailsSheet
-          bookmark={details}
-          onOpenChange={(open) => !open && setDetailsId(null)}
-          onEdit={(b) => {
-            setDetailsId(null);
-            openEdit(b);
-          }}
-          onDelete={(id) => {
-            deleteBookmark(id);
-            setDetailsId(null);
-          }}
-        />
-      </div>
-    </TooltipProvider>
-  );
-}
-
-// function useThemeToggle() {
-//   const [isDark, setIsDark] = useState(false);
-
-//   useEffect(() => {
-//     setIsDark(document.documentElement.classList.contains("dark"));
-//   }, []);
-
-//   const toggle = () => {
-//     const next = !isDark;
-//     setIsDark(next);
-//     document.documentElement.classList.toggle("dark", next);
-//     localStorage.setItem("theme", next ? "dark" : "light");
-//   };
-
-//   return { isDark, toggle };
-// }
 
 /* ---------- Header ---------- */
 
@@ -369,8 +142,8 @@ function Header({
           Developer Bookmark Manager
         </h1>
         <p className="max-w-2xl text-sm text-muted-foreground md:text-base">
-          Save, organize, and quickly access your favorite development resources — repos, docs,
-          tutorials, articles, and AI tools.
+          Save, organize, and quickly access your favorite development resources
+          — repos, docs, tutorials, articles, and AI tools.
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -402,14 +175,39 @@ function StatsRow({
   stats,
   loading,
 }: {
-  stats: { total: number; favorites: number; categories: number; recent: number };
+  stats: {
+    total: number;
+    favorites: number;
+    categories: number;
+    recent: number;
+  };
   loading: boolean;
 }) {
   const items = [
-    { label: "Total Bookmarks", value: stats.total, icon: BookmarkIcon, accent: "primary" as const },
-    { label: "Favorites", value: stats.favorites, icon: Heart, accent: "warning" as const },
-    { label: "Categories", value: stats.categories, icon: Layers, accent: "info" as const },
-    { label: "Recently Added", value: stats.recent, icon: Clock, accent: "success" as const },
+    {
+      label: "Total Bookmarks",
+      value: stats.total,
+      icon: BookmarkIcon,
+      accent: "primary" as const,
+    },
+    {
+      label: "Favorites",
+      value: stats.favorites,
+      icon: Heart,
+      accent: "warning" as const,
+    },
+    {
+      label: "Categories",
+      value: stats.categories,
+      icon: Layers,
+      accent: "info" as const,
+    },
+    {
+      label: "Recently Added",
+      value: stats.recent,
+      icon: Clock,
+      accent: "success" as const,
+    },
   ];
 
   if (loading) {
@@ -431,7 +229,9 @@ function StatsRow({
               <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 {s.label}
               </div>
-              <div className="mt-2 text-3xl font-semibold tracking-tight">{s.value}</div>
+              <div className="mt-2 text-3xl font-semibold tracking-tight">
+                {s.value}
+              </div>
             </div>
             <div
               className={cn(
@@ -451,56 +251,6 @@ function StatsRow({
   );
 }
 
-/* ---------- Quick Actions ---------- */
-
-// function QuickActions({
-//   onAdd,
-//   onFavorites,
-//   onRecent,
-//   onMostVisited,
-// }: {
-//   onAdd: () => void;
-//   onFavorites: () => void;
-//   onRecent: () => void;
-//   onMostVisited: () => void;
-// }) {
-//   const items = [
-//     { label: "Add New Bookmark", icon: Plus, onClick: onAdd, hint: "Save a resource" },
-//     { label: "View Favorites", icon: Star, onClick: onFavorites, hint: "Your starred items" },
-//     { label: "Recently Added", icon: Clock, onClick: onRecent, hint: "Newest first" },
-//     { label: "Most Visited", icon: TrendingUp, onClick: onMostVisited, hint: "Top by visits" },
-//     {
-//       label: "AI Recommendations",
-//       icon: Sparkles,
-//       onClick: () => {},
-//       hint: "Coming soon",
-//       disabled: true,
-//     },
-//   ];
-//   return (
-//     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-//       {items.map((it) => (
-//         <button
-//           key={it.label}
-//           onClick={it.onClick}
-//           disabled={it.disabled}
-//           className={cn(
-//             "card-hover group flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-left",
-//             it.disabled && "cursor-not-allowed opacity-60 hover:translate-y-0 hover:shadow-none",
-//           )}
-//         >
-//           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-//             <it.icon className="size-4" />
-//           </span>
-//           <div className="min-w-0">
-//             <div className="truncate text-sm font-medium">{it.label}</div>
-//             <div className="truncate text-xs text-muted-foreground">{it.hint}</div>
-//           </div>
-//         </button>
-//       ))}
-//     </div>
-//   );
-// }
 
 /* ---------- Filter Bar ---------- */
 
@@ -563,7 +313,10 @@ function FilterBar(props: {
             </SelectContent>
           </Select>
 
-          <Select value={props.sort} onValueChange={(v) => props.setSort(v as SortOption)}>
+          <Select
+            value={props.sort}
+            onValueChange={(v) => props.setSort(v as SortOption)}
+          >
             <SelectTrigger className="w-40">
               <SelectValue placeholder="Sort" />
             </SelectTrigger>
@@ -579,7 +332,9 @@ function FilterBar(props: {
             <Star
               className={cn(
                 "size-4",
-                props.favoritesOnly ? "fill-warning text-warning" : "text-muted-foreground",
+                props.favoritesOnly
+                  ? "fill-warning text-warning"
+                  : "text-muted-foreground",
               )}
             />
             <Label htmlFor="fav-only" className="text-sm">
@@ -599,7 +354,8 @@ function FilterBar(props: {
 
 /* ---------- Sidebar ---------- */
 
-{/* function CategoriesSidebar({
+{
+  /* function CategoriesSidebar({
   counts,
   active,
   onSelect,
@@ -695,166 +451,9 @@ function FilterBar(props: {
       )}
     </div>
   );
-} */}
-
-/* ---------- Card ---------- */
-
-function BookmarkCard({
-  bookmark,
-  onOpenDetails,
-  onToggleFavorite,
-  onEdit,
-  onDelete,
-  onCopy,
-}: {
-  bookmark: Bookmark;
-  onOpenDetails: () => void;
-  onToggleFavorite: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  onCopy: () => void;
-}) {
-  const TypeIcon = TYPE_ICON[bookmark.resource_type];
-
-  return (
-    <Card
-      className="card-hover group relative flex h-full cursor-pointer flex-col overflow-hidden"
-      onClick={onOpenDetails}
-    >
-      <CardHeader className="space-y-3 pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted">
-              <img
-                src={faviconOf(bookmark.url)}
-                alt=""
-                className="size-5"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).style.display = "none";
-                }}
-              />
-            </div>
-            <div className="min-w-0">
-              <CardTitle className="truncate text-base">{bookmark.title}</CardTitle>
-              <div className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
-                {domainOf(bookmark.url)}
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleFavorite();
-            }}
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-warning"
-            aria-label="Toggle favorite"
-          >
-            {bookmark.is_favorite ? (
-              <Star className="size-4 fill-warning text-warning" />
-            ) : (
-              <StarOff className="size-4" />
-            )}
-          </button>
-        </div>
-
-        <CardDescription className="line-clamp-2 text-sm">
-          {bookmark.description}
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="mt-auto space-y-3 pt-0">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Badge variant="secondary" className="gap-1">
-            <TypeIcon className="size-3" />
-            {bookmark.resource_type}
-          </Badge>
-          <Badge variant="outline" className="border-primary/40 text-primary">
-            {bookmark.category}
-          </Badge>
-          {bookmark.tags.slice(0, 2).map((t) => (
-            <Badge key={t} variant="outline" className="font-mono text-[10px]">
-              #{t}
-            </Badge>
-          ))}
-          {bookmark.tags.length > 2 && (
-            <span className="text-xs text-muted-foreground">+{bookmark.tags.length - 2}</span>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5">
-            <Calendar className="size-3" />
-            {formatDate(bookmark.created_at)}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Eye className="size-3" />
-            {bookmark.visit_count} visits
-          </span>
-        </div>
-
-        <div className="pointer-events-none flex items-center gap-1 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="default"
-                size="sm"
-                className="h-8 flex-1"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (typeof window !== "undefined")
-                    window.open(bookmark.url, "_blank", "noopener,noreferrer");
-                }}
-              >
-                <ExternalLink className="size-3.5" /> Open
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Open link</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCopy();
-                }}
-              >
-                <Copy className="size-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Copy URL</TooltipContent>
-          </Tooltip>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreHorizontal className="size-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-              <DropdownMenuItem onClick={onEdit}>
-                <Pencil className="size-3.5" /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onToggleFavorite}>
-                <Star className="size-3.5" />
-                {bookmark.is_favorite ? "Unfavorite" : "Favorite"}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
-                <Trash2 className="size-3.5" /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </CardContent>
-    </Card>
-  );
+} */
 }
+
 
 /* ---------- Empty & Skeleton ---------- */
 
@@ -864,9 +463,12 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/15 text-primary">
         <BookmarkIcon className="size-7" />
       </div>
-      <h3 className="mt-5 text-lg font-semibold">Your bookmark library is empty</h3>
+      <h3 className="mt-5 text-lg font-semibold">
+        Your bookmark library is empty
+      </h3>
       <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-        Start collecting the docs, repos, and articles you want to keep close at hand.
+        Start collecting the docs, repos, and articles you want to keep close at
+        hand.
       </p>
       <Button className="mt-6" onClick={onAdd}>
         <Plus className="size-4" /> Add Your First Bookmark
@@ -979,9 +581,12 @@ function BookmarkFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85dvh] p-5 sm:p-6">
         <DialogHeader>
-          <DialogTitle>{initial ? "Edit bookmark" : "Add a new bookmark"}</DialogTitle>
+          <DialogTitle>
+            {initial ? "Edit bookmark" : "Add a new bookmark"}
+          </DialogTitle>
           <DialogDescription>
-            Capture a resource you want to revisit. Tags and notes help you find it later.
+            Capture a resource you want to revisit. Tags and notes help you find
+            it later.
           </DialogDescription>
         </DialogHeader>
 
@@ -996,7 +601,9 @@ function BookmarkFormDialog({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="React Official Documentation"
             />
-            {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
+            {errors.title && (
+              <p className="text-xs text-destructive">{errors.title}</p>
+            )}
           </div>
 
           <div className="grid gap-2">
@@ -1010,7 +617,9 @@ function BookmarkFormDialog({
               placeholder="https://react.dev"
               className="font-mono"
             />
-            {errors.url && <p className="text-xs text-destructive">{errors.url}</p>}
+            {errors.url && (
+              <p className="text-xs text-destructive">{errors.url}</p>
+            )}
           </div>
 
           <div className="grid gap-2">
@@ -1027,7 +636,10 @@ function BookmarkFormDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label>Category</Label>
-              <Select value={category} onValueChange={(v) => setCategory(v as Category)}>
+              <Select
+                value={category}
+                onValueChange={(v) => setCategory(v as Category)}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -1042,7 +654,10 @@ function BookmarkFormDialog({
             </div>
             <div className="grid gap-2">
               <Label>Resource Type</Label>
-              <Select value={type} onValueChange={(v) => setType(v as ResourceType)}>
+              <Select
+                value={type}
+                onValueChange={(v) => setType(v as ResourceType)}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -1085,7 +700,11 @@ function BookmarkFormDialog({
                 Mark as favorite
               </Label>
             </div>
-            <Switch id="bm-fav" checked={favorite} onCheckedChange={setFavorite} />
+            <Switch
+              id="bm-fav"
+              checked={favorite}
+              onCheckedChange={setFavorite}
+            />
           </div>
         </div>
 
@@ -1093,7 +712,9 @@ function BookmarkFormDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={submit}>{initial ? "Save changes" : "Add bookmark"}</Button>
+          <Button onClick={submit}>
+            {initial ? "Save changes" : "Add bookmark"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1124,7 +745,9 @@ function useMemoReset(
     setters.setDescription(initial?.description ?? "");
     setters.setUrl(initial?.url ?? "");
     setters.setCategory((initial?.category as Category) ?? "Frontend");
-    setters.setType((initial?.resource_type as ResourceType) ?? "Documentation");
+    setters.setType(
+      (initial?.resource_type as ResourceType) ?? "Documentation",
+    );
     setters.setTagsStr(initial?.tags.join(", ") ?? "");
     setters.setFavorite(initial?.is_favorite ?? false);
     setters.setNotes(initial?.notes ?? "");
@@ -1147,7 +770,10 @@ function BookmarkDetailsSheet({
   onDelete: (id: string) => void;
 }) {
   const open = !!bookmark;
-  const TypeIcon = bookmark ? TYPE_ICON[bookmark.resource_type] : Globe;
+  const TypeIcon =
+  bookmark && TYPE_ICON[bookmark.resource_type]
+    ? TYPE_ICON[bookmark.resource_type]
+    : Globe;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -1162,12 +788,15 @@ function BookmarkDetailsSheet({
                     alt=""
                     className="size-6"
                     onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display = "none";
+                      (e.currentTarget as HTMLImageElement).style.display =
+                        "none";
                     }}
                   />
                 </div>
                 <div className="min-w-0">
-                  <SheetTitle className="truncate text-left text-lg">{bookmark.title}</SheetTitle>
+                  <SheetTitle className="truncate text-left text-lg">
+                    {bookmark.title}
+                  </SheetTitle>
                   <SheetDescription className="truncate text-left font-mono text-xs">
                     {domainOf(bookmark.url)}
                   </SheetDescription>
@@ -1214,10 +843,16 @@ function BookmarkDetailsSheet({
                 </h4>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {bookmark.tags.length === 0 && (
-                    <span className="text-xs text-muted-foreground">No tags</span>
+                    <span className="text-xs text-muted-foreground">
+                      No tags
+                    </span>
                   )}
                   {bookmark.tags.map((t) => (
-                    <Badge key={t} variant="outline" className="font-mono text-[10px]">
+                    <Badge
+                      key={t}
+                      variant="outline"
+                      className="font-mono text-[10px]"
+                    >
                       <TagIcon className="size-2.5" />
                       {t}
                     </Badge>
@@ -1228,8 +863,16 @@ function BookmarkDetailsSheet({
               <Separator />
 
               <div className="grid grid-cols-3 gap-3">
-                <StatBox label="Visits" value={bookmark.visit_count.toString()} icon={Eye} />
-                <StatBox label="Added" value={formatDate(bookmark.created_at)} icon={Calendar} />
+                <StatBox
+                  label="Visits"
+                  value={bookmark.visit_count.toString()}
+                  icon={Eye}
+                />
+                <StatBox
+                  label="Added"
+                  value={formatDate(bookmark.created_at)}
+                  icon={Calendar}
+                />
                 <StatBox
                   label="Last visit"
                   value={formatDate(bookmark.last_visited_at)}
@@ -1253,7 +896,11 @@ function BookmarkDetailsSheet({
                   className="flex-1"
                   onClick={() => {
                     if (typeof window !== "undefined")
-                      window.open(bookmark.url, "_blank", "noopener,noreferrer");
+                      window.open(
+                        bookmark.url,
+                        "_blank",
+                        "noopener,noreferrer",
+                      );
                   }}
                 >
                   <ExternalLink className="size-4" /> Open Resource
@@ -1297,6 +944,412 @@ function StatBox({
   );
 }
 
+export default function BookMarksManager() {
+  const { user } = useAuth();
+  const { data, isLoading } = useBookMarks(user?.id);
+  console.log(data);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+
+  useEffect(() => {
+    if (data && data.length > 0) {
+      setBookmarks(data);
+    }
+  }, [data]);
+
+
+  const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState<"all" | Category>("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | ResourceType>("all");
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [sort, setSort] = useState<SortOption>("newest");
+
+  const [editing, setEditing] = useState<Bookmark | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [detailsId, setDetailsId] = useState<string | null>(null);
+
+  const stats = useMemo(() => {
+    const total = bookmarks.length;
+    const favorites = bookmarks.filter((b) => b.is_favorite).length;
+    const categories = new Set(bookmarks.map((b) => b.category)).size;
+    const lastWeek = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const recent = bookmarks.filter((b) => new Date(b.created_at).getTime() > lastWeek).length;
+    return { total, favorites, categories, recent };
+  }, [bookmarks]);
+
+  const filtered = useMemo(() => {
+    let list = bookmarks.slice();
+    if (activeCategory !== "all")
+      list = list.filter((b) => b.category === activeCategory);
+    if (typeFilter !== "all")
+      list = list.filter((b) => b.resource_type === typeFilter);
+    if (favoritesOnly) list = list.filter((b) => b.is_favorite);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (b) =>
+          b.title.toLowerCase().includes(q) ||
+          b.description.toLowerCase().includes(q) ||
+          b.url.toLowerCase().includes(q) ||
+          b.tags.some((t) => t.toLowerCase().includes(q)),
+      );
+    }
+    list.sort((a, b) => {
+      switch (sort) {
+        case "oldest":
+          return +new Date(a.created_at) - +new Date(b.created_at);
+        case "most-visited":
+          return b.visit_count - a.visit_count;
+        case "alphabetical":
+          return a.title.localeCompare(b.title);
+        case "newest":
+        default:
+          return +new Date(b.created_at) - +new Date(a.created_at);
+      }
+    });
+    return list;
+  }, [bookmarks, activeCategory, typeFilter, favoritesOnly, search, sort]);
+
+  const details = detailsId
+    ? (bookmarks.find((b) => b.id === detailsId) ?? null)
+    : null;
+
+  const toggleFavorite = (id: string) =>
+    setBookmarks((prev) =>
+      prev.map((b) =>
+        b.id === id ? { ...b, is_favorite: !b.is_favorite } : b,
+      ),
+    );
+  const deleteBookmark = (id: string) =>
+    setBookmarks((prev) => prev.filter((b) => b.id !== id));
+  const copyUrl = (url: string) => {
+    if (typeof navigator !== "undefined")
+      navigator.clipboard?.writeText(url).catch(() => {});
+  };
+
+  const openAdd = () => {
+    setEditing(null);
+    setModalOpen(true);
+  };
+  const openEdit = (b: Bookmark) => {
+    setEditing(b);
+    setModalOpen(true);
+  };
+
+  const saveBookmark = (data: BookmarkFormValues) => {
+    if (editing) {
+      setBookmarks((prev) =>
+        prev.map((b) =>
+          b.id === editing.id
+            ? {
+                ...b,
+                ...data,
+                tags: data.tags,
+                updated_at: new Date().toISOString(),
+              }
+            : b,
+        ),
+      );
+    } else {
+      const now = new Date().toISOString();
+      const next: Bookmark = {
+        id: crypto.randomUUID(),
+        ...data,
+        visit_count: 0,
+        created_at: now,
+        updated_at: now,
+      };
+      setBookmarks((prev) => [next, ...prev]);
+    }
+    setModalOpen(false);
+    setEditing(null);
+  };
+
+  // const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const exportCsv = () => {
+    const csv = bookmarksToCsv(bookmarks);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const date = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `devnexus-bookmarks-${date}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // const importCsv = async (file: File) => {
+  //   try {
+  //     const text = await file.text();
+  //     const imported = csvToBookmarks(text);
+  //     if (imported.length === 0) {
+  //       alert("No valid bookmarks found in CSV.");
+  //       return;
+  //     }
+  //     setBookmarks((prev) => {
+  //       const existingUrls = new Set(prev.map((b) => b.url));
+  //       const fresh = imported.filter((b) => !existingUrls.has(b.url));
+  //       return [...fresh, ...prev];
+  //     });
+  //     alert(`Imported ${imported.length} bookmark(s).`);
+  //   } catch (err) {
+  //     alert(`Failed to import CSV: ${(err as Error).message}`);
+  //   }
+  // };
+
+  return (
+    <TooltipProvider delayDuration={150}>
+      <div className="min-h-screen w-full">
+        {/* Main */}
+        <main className="min-w-0 flex-1">
+          <div className="space-y-8 px-4 py-8 md:px-8">
+            <Header
+              onAdd={openAdd}
+              onExport={exportCsv}
+              // onImport={() => fileInputRef.current?.click()}
+            />
+            {/* <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) importCsv(f);
+                  e.target.value = "";
+                }}
+              /> */}
+
+            <StatsRow loading={isLoading} stats={stats} />
+            <FilterBar
+              search={search}
+              setSearch={setSearch}
+              category={activeCategory}
+              setCategory={setActiveCategory}
+              type={typeFilter}
+              setType={setTypeFilter}
+              favoritesOnly={favoritesOnly}
+              setFavoritesOnly={setFavoritesOnly}
+              sort={sort}
+              setSort={setSort}
+            />
+
+            {isLoading ? (
+              <SkeletonGrid />
+            ) : filtered.length === 0 ? (
+              <EmptyState onAdd={openAdd} />
+            ) : (
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                {filtered.map((bookmark) => (
+                  <Card
+                    key={bookmark?.id}
+                    className="card-hover group relative flex h-full cursor-pointer flex-col overflow-hidden"
+                    onClick={() => setDetailsId(bookmark?.id)}
+                  >
+                    <CardHeader className="space-y-3 pb-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted">
+                            <img
+                              src={faviconOf(bookmark?.url)}
+                              alt=""
+                              className="size-5"
+                              onError={(e) => {
+                                (
+                                  e.currentTarget as HTMLImageElement
+                                ).style.display = "none";
+                              }}
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <CardTitle className="truncate text-base">
+                              {bookmark?.title}
+                            </CardTitle>
+                            <div className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
+                              {domainOf(bookmark?.url)}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(bookmark.id);
+                          }}
+                          className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-warning"
+                          aria-label="Toggle favorite"
+                        >
+                          {bookmark?.is_favorite ? (
+                            <Star className="size-4 fill-warning text-warning" />
+                          ) : (
+                            <StarOff className="size-4" />
+                          )}
+                        </button>
+                      </div>
+
+                      <CardDescription className="line-clamp-2 text-sm">
+                        {bookmark?.description}
+                      </CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="mt-auto space-y-3 pt-0">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge
+                          variant="outline"
+                          className="border-primary/40 text-primary"
+                        >
+                          {bookmark?.category}
+                        </Badge>
+                        {bookmark?.tags.slice(0, 2).map((t) => (
+                          <Badge
+                            key={t}
+                            variant="outline"
+                            className="font-mono text-[10px]"
+                          >
+                            #{t}
+                          </Badge>
+                        ))}
+                        {bookmark?.tags.length > 2 && (
+                          <span className="text-xs text-muted-foreground">
+                            +{bookmark?.tags.length - 2}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5">
+                          <Calendar className="size-3" />
+                          {formatDate(bookmark?.created_at)}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <Eye className="size-3" />
+                          {bookmark?.visit_count} visits
+                        </span>
+                      </div>
+
+                      <div className="pointer-events-none flex items-center gap-1 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="h-8 flex-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (typeof window !== "undefined")
+                                  window.open(
+                                    bookmark?.url,
+                                    "_blank",
+                                    "noopener,noreferrer",
+                                  );
+                              }}
+                            >
+                              <ExternalLink className="size-3.5" /> Open
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Open link</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyUrl(bookmark?.url);
+                              }}
+                            >
+                              <Copy className="size-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Copy URL</TooltipContent>
+                        </Tooltip>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="size-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <DropdownMenuItem onClick={() => openEdit(bookmark)}>
+                              <Pencil className="size-3.5" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => toggleFavorite(bookmark?.id)}
+                            >
+                              <Star className="size-3.5" />
+                              {bookmark?.is_favorite
+                                ? "Unfavorite"
+                                : "Favorite"}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => deleteBookmark(bookmark?.id)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="size-3.5" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
+
+        <BookmarkFormDialog
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          initial={editing}
+          onSubmit={saveBookmark}
+        />
+
+        <BookmarkDetailsSheet
+          bookmark={details}
+          onOpenChange={(open) => !open && setDetailsId(null)}
+          onEdit={(b) => {
+            setDetailsId(null);
+            openEdit(b);
+          }}
+          onDelete={(id) => {
+            deleteBookmark(id);
+            setDetailsId(null);
+          }}
+        />
+      </div>
+    </TooltipProvider>
+  );
+}
+
+// function useThemeToggle() {
+//   const [isDark, setIsDark] = useState(false);
+
+//   useEffect(() => {
+//     setIsDark(document.documentElement.classList.contains("dark"));
+//   }, []);
+
+//   const toggle = () => {
+//     const next = !isDark;
+//     setIsDark(next);
+//     document.documentElement.classList.toggle("dark", next);
+//     localStorage.setItem("theme", next ? "dark" : "light");
+//   };
+
+//   return { isDark, toggle };
+// }
+
 /* ---------- CSV helpers ---------- */
 
 const CSV_COLUMNS = [
@@ -1333,7 +1386,8 @@ function bookmarksToCsv(items: Bookmark[]): string {
   return [header, ...rows].join("\n");
 }
 
-{/* function parseCsv(text: string): string[][] {
+{
+  /* function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let field = "";
@@ -1372,9 +1426,11 @@ function bookmarksToCsv(items: Bookmark[]): string {
     rows.push(row);
   }
   return rows.filter((r) => r.length > 1 || (r.length === 1 && r[0] !== ""));
-} */}
+} */
+}
 
-{/* function csvToBookmarks(text: string): Bookmark[] {
+{
+  /* function csvToBookmarks(text: string): Bookmark[] {
   const rows = parseCsv(text);
   if (rows.length === 0) return [];
   const header = rows[0].map((h) => h.trim());
@@ -1402,4 +1458,5 @@ function bookmarksToCsv(items: Bookmark[]): string {
     });
   }
   return out;
-} */}
+} */
+}
