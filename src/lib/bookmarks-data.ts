@@ -37,6 +37,7 @@ export interface Bookmark {
   created_at: string;
   updated_at: string;
   last_visited_at?: string;
+  user_id?: string;
 }
 
 export const CATEGORIES: Category[] = [

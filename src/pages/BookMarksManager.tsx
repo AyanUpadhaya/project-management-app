@@ -100,6 +100,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useBookMarks } from "@/api/querysApi";
 import { useAuth } from "@/context/AuthProvider";
+import { useCreateBookmark, useUpdateBookmark } from "@/api/mutationsApi";
 
 type SortOption = "newest" | "oldest" | "most-visited" | "alphabetical";
 
@@ -117,7 +118,6 @@ const TYPE_ICON: Record<
   "API Reference": Code2,
   Other: Globe,
 };
-
 
 /* ---------- Header ---------- */
 
@@ -251,7 +251,6 @@ function StatsRow({
   );
 }
 
-
 /* ---------- Filter Bar ---------- */
 
 function FilterBar(props: {
@@ -352,109 +351,6 @@ function FilterBar(props: {
   );
 }
 
-/* ---------- Sidebar ---------- */
-
-{
-  /* function CategoriesSidebar({
-  counts,
-  active,
-  onSelect,
-  collapsed,
-  onToggle,
-}: {
-  counts: Record<string, number>;
-  active: "all" | Category;
-  onSelect: (c: "all" | Category) => void;
-  collapsed: boolean;
-  onToggle: () => void;
-}) {
-  const items: Array<{ key: "all" | Category; label: string }> = [
-    { key: "all", label: "All Bookmarks" },
-    ...CATEGORIES.map((c) => ({ key: c, label: c })),
-  ];
-
-  return (
-    <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
-        {!collapsed && (
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/20 text-primary">
-              <BookmarkIcon className="size-4" />
-            </div>
-            <div className="text-sm font-semibold tracking-tight">DevNexus</div>
-          </div>
-        )}
-        <Button variant="ghost" size="icon" onClick={onToggle} className="h-8 w-8">
-          {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
-        </Button>
-      </div>
-
-      <ScrollArea className="flex-1 px-2 py-3">
-        {!collapsed && (
-          <div className="px-2 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Categories
-          </div>
-        )}
-        <nav className="space-y-1">
-          {items.map((it) => {
-            const isActive = active === it.key;
-            const count = counts[it.key as string] ?? 0;
-            return (
-              <button
-                key={it.key}
-                onClick={() => onSelect(it.key)}
-                className={cn(
-                  "group flex w-full items-center justify-between rounded-md px-2.5 py-2 text-sm transition-colors",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
-                )}
-              >
-                <span className="flex min-w-0 items-center gap-2.5">
-                  <span
-                    className={cn(
-                      "h-1.5 w-1.5 shrink-0 rounded-full",
-                      isActive ? "bg-primary" : "bg-muted-foreground/40",
-                    )}
-                  />
-                  {!collapsed && <span className="truncate">{it.label}</span>}
-                </span>
-                {!collapsed && (
-                  <span
-                    className={cn(
-                      "rounded px-1.5 py-0.5 text-xs tabular-nums",
-                      isActive
-                        ? "bg-primary/20 text-primary"
-                        : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-      </ScrollArea>
-
-      {!collapsed && (
-        <div className="border-t border-sidebar-border p-3">
-          <div className="rounded-lg bg-linear-to-br from-primary/15 to-info/10 p-3">
-            <div className="flex items-center gap-2 text-xs font-medium">
-              <Sparkles className="size-3.5 text-primary" /> Pro tip
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Use tags to cross-link resources across categories.
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-} */
-}
-
-
 /* ---------- Empty & Skeleton ---------- */
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
@@ -519,11 +415,13 @@ function BookmarkFormDialog({
   onOpenChange,
   initial,
   onSubmit,
+  isLoading,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   initial: Bookmark | null;
   onSubmit: (v: BookmarkFormValues) => void;
+  isLoading: boolean;
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -534,6 +432,8 @@ function BookmarkFormDialog({
   const [favorite, setFavorite] = useState(false);
   const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState<{ title?: string; url?: string }>({});
+  const buttonText = initial ? "Save changes" : "Add bookmark";
+  const loadingText = isLoading && initial ? "Saving..." : "Adding...";
 
   // Reset on open/initial change
   useMemoReset(open, initial, {
@@ -549,6 +449,8 @@ function BookmarkFormDialog({
   });
 
   const submit = () => {
+    console.log(initial)
+
     const e: typeof errors = {};
     if (!title.trim()) e.title = "Title is required";
     if (!url.trim()) e.url = "URL is required";
@@ -579,7 +481,7 @@ function BookmarkFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85dvh] p-5 sm:p-6">
+      <DialogContent className=" p-5 sm:p-6">
         <DialogHeader>
           <DialogTitle>
             {initial ? "Edit bookmark" : "Add a new bookmark"}
@@ -709,11 +611,26 @@ function BookmarkFormDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            disabled={isLoading}
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
-          <Button onClick={submit}>
-            {initial ? "Save changes" : "Add bookmark"}
+          <Button
+            className="flex items-center justify-center gap-2"
+            onClick={submit}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                {loadingText}
+              </>
+            ) : (
+              buttonText
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -771,9 +688,9 @@ function BookmarkDetailsSheet({
 }) {
   const open = !!bookmark;
   const TypeIcon =
-  bookmark && TYPE_ICON[bookmark.resource_type]
-    ? TYPE_ICON[bookmark.resource_type]
-    : Globe;
+    bookmark && TYPE_ICON[bookmark.resource_type]
+      ? TYPE_ICON[bookmark.resource_type]
+      : Globe;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -947,15 +864,15 @@ function StatBox({
 export default function BookMarksManager() {
   const { user } = useAuth();
   const { data, isLoading } = useBookMarks(user?.id);
-  console.log(data);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const createBookMarkMutation = useCreateBookmark();
+  const updateBookMarkMutation = useUpdateBookmark();
 
   useEffect(() => {
     if (data && data.length > 0) {
       setBookmarks(data);
     }
   }, [data]);
-
 
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<"all" | Category>("all");
@@ -967,12 +884,16 @@ export default function BookMarksManager() {
   const [modalOpen, setModalOpen] = useState(false);
   const [detailsId, setDetailsId] = useState<string | null>(null);
 
+  const mutation = editing ? updateBookMarkMutation : createBookMarkMutation;
+
   const stats = useMemo(() => {
     const total = bookmarks.length;
     const favorites = bookmarks.filter((b) => b.is_favorite).length;
     const categories = new Set(bookmarks.map((b) => b.category)).size;
     const lastWeek = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const recent = bookmarks.filter((b) => new Date(b.created_at).getTime() > lastWeek).length;
+    const recent = bookmarks.filter(
+      (b) => new Date(b.created_at).getTime() > lastWeek,
+    ).length;
     return { total, favorites, categories, recent };
   }, [bookmarks]);
 
@@ -1035,33 +956,39 @@ export default function BookMarksManager() {
     setModalOpen(true);
   };
 
-  const saveBookmark = (data: BookmarkFormValues) => {
-    if (editing) {
-      setBookmarks((prev) =>
-        prev.map((b) =>
-          b.id === editing.id
-            ? {
-                ...b,
-                ...data,
-                tags: data.tags,
-                updated_at: new Date().toISOString(),
-              }
-            : b,
-        ),
-      );
-    } else {
-      const now = new Date().toISOString();
-      const next: Bookmark = {
-        id: crypto.randomUUID(),
-        ...data,
-        visit_count: 0,
-        created_at: now,
-        updated_at: now,
+  const saveBookmark = async (data: BookmarkFormValues) => {
+    if (editing?.id) {
+      const id = editing?.id;
+      const updates: Partial<Bookmark> = {
+        title: data.title,
+        description: data.description,
+        url: data.url,
+        category: data.category,
+        resource_type: data.resource_type,
+        tags: data.tags,
+        is_favorite: data.is_favorite,
+        notes: data.notes,
       };
-      setBookmarks((prev) => [next, ...prev]);
+
+      await updateBookMarkMutation.mutateAsync({ id, updates });
+      setModalOpen(false);
+      setEditing(null);
+    } else {
+      const newBookmark: Partial<Bookmark> = {
+        title: data.title,
+        description: data.description,
+        url: data.url,
+        category: data.category,
+        resource_type: data.resource_type,
+        tags: data.tags,
+        is_favorite: data.is_favorite,
+        notes: data.notes,
+        user_id: user?.id ?? "",
+      };
+      await createBookMarkMutation.mutateAsync(newBookmark);
+      setModalOpen(false);
+      setEditing(null);
     }
-    setModalOpen(false);
-    setEditing(null);
   };
 
   // const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1080,47 +1007,13 @@ export default function BookMarksManager() {
     URL.revokeObjectURL(url);
   };
 
-  // const importCsv = async (file: File) => {
-  //   try {
-  //     const text = await file.text();
-  //     const imported = csvToBookmarks(text);
-  //     if (imported.length === 0) {
-  //       alert("No valid bookmarks found in CSV.");
-  //       return;
-  //     }
-  //     setBookmarks((prev) => {
-  //       const existingUrls = new Set(prev.map((b) => b.url));
-  //       const fresh = imported.filter((b) => !existingUrls.has(b.url));
-  //       return [...fresh, ...prev];
-  //     });
-  //     alert(`Imported ${imported.length} bookmark(s).`);
-  //   } catch (err) {
-  //     alert(`Failed to import CSV: ${(err as Error).message}`);
-  //   }
-  // };
-
   return (
     <TooltipProvider delayDuration={150}>
       <div className="min-h-screen w-full">
         {/* Main */}
         <main className="min-w-0 flex-1">
           <div className="space-y-8 px-4 py-8 md:px-8">
-            <Header
-              onAdd={openAdd}
-              onExport={exportCsv}
-              // onImport={() => fileInputRef.current?.click()}
-            />
-            {/* <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,text/csv"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) importCsv(f);
-                  e.target.value = "";
-                }}
-              /> */}
+            <Header onAdd={openAdd} onExport={exportCsv} />
 
             <StatsRow loading={isLoading} stats={stats} />
             <FilterBar
@@ -1281,7 +1174,9 @@ export default function BookMarksManager() {
                             align="end"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <DropdownMenuItem onClick={() => openEdit(bookmark)}>
+                            <DropdownMenuItem
+                              onClick={() => openEdit(bookmark)}
+                            >
                               <Pencil className="size-3.5" /> Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem
@@ -1314,6 +1209,7 @@ export default function BookMarksManager() {
           onOpenChange={setModalOpen}
           initial={editing}
           onSubmit={saveBookmark}
+          isLoading={mutation.isPending}
         />
 
         <BookmarkDetailsSheet
@@ -1384,79 +1280,4 @@ function bookmarksToCsv(items: Bookmark[]): string {
     }).join(","),
   );
   return [header, ...rows].join("\n");
-}
-
-{
-  /* function parseCsv(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let field = "";
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') {
-          field += '"';
-          i++;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        field += ch;
-      }
-    } else {
-      if (ch === '"') inQuotes = true;
-      else if (ch === ",") {
-        row.push(field);
-        field = "";
-      } else if (ch === "\n" || ch === "\r") {
-        if (ch === "\r" && text[i + 1] === "\n") i++;
-        row.push(field);
-        rows.push(row);
-        row = [];
-        field = "";
-      } else {
-        field += ch;
-      }
-    }
-  }
-  if (field.length > 0 || row.length > 0) {
-    row.push(field);
-    rows.push(row);
-  }
-  return rows.filter((r) => r.length > 1 || (r.length === 1 && r[0] !== ""));
-} */
-}
-
-{
-  /* function csvToBookmarks(text: string): Bookmark[] {
-  const rows = parseCsv(text);
-  if (rows.length === 0) return [];
-  const header = rows[0].map((h) => h.trim());
-  const now = new Date().toISOString();
-  const out: Bookmark[] = [];
-  for (let i = 1; i < rows.length; i++) {
-    const row = rows[i];
-    const rec: Record<string, string> = {};
-    header.forEach((h, idx) => (rec[h] = row[idx] ?? ""));
-    if (!rec.url || !rec.title) continue;
-    out.push({
-      id: crypto.randomUUID(),
-      title: rec.title,
-      url: rec.url,
-      description: rec.description ?? "",
-      category: (rec.category as Category) || "Frontend",
-      resource_type: (rec.resource_type as ResourceType) || "Other",
-      tags: rec.tags ? rec.tags.split("|").map((t) => t.trim()).filter(Boolean) : [],
-      is_favorite: /^(true|1|yes)$/i.test(rec.is_favorite ?? ""),
-      visit_count: Number.parseInt(rec.visit_count ?? "0", 10) || 0,
-      notes: rec.notes || undefined,
-      created_at: rec.created_at || now,
-      updated_at: rec.updated_at || now,
-      last_visited_at: rec.last_visited_at || undefined,
-    });
-  }
-  return out;
-} */
 }

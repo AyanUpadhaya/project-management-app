@@ -9,6 +9,7 @@ import type {
   UpdateTrelloProjectInput,
 } from "@/types";
 import type { Note } from "@/utils/notesStorage";
+import type { Bookmark } from "@/lib/bookmarks-data";
 
 //projects
 export const useCreateProject = () => {
@@ -471,3 +472,85 @@ export const useDeleteNote = () => {
   console.log("Context from onMutate:", context);
 }
  */
+
+//bookmarks mutations
+
+export const useCreateBookmark = ()=>{
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (bookmarkData: Partial<Bookmark>) => {
+      const { data, error } = await supabase
+        .from("bookmarks")
+        .insert([bookmarkData])
+        .select()
+        .single(); 
+        if (error) throw new Error(error.message);
+      return data;
+    },
+     onSuccess: (newData) => {
+      queryClient.invalidateQueries({
+        queryKey: ["bookmarks", newData.user_id],
+      });
+    },
+  });
+};
+
+export const useUpdateBookmark = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      updates,
+    }: {
+      id: string;
+      updates: Partial<Bookmark>;
+    }) => {
+      const { data, error } = await supabase
+        .from("bookmarks")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+
+      return data;
+    },
+
+    onSuccess: (updatedBookmark) => {
+      queryClient.invalidateQueries({
+        queryKey: ["bookmarks", updatedBookmark.user_id],
+      });
+    },
+  });
+};
+
+export const useDeleteBookmark = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      userId,
+    }: {
+      id: string;
+      userId?: string;
+    }) => {
+      const { error } = await supabase
+        .from("bookmarks")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw new Error(error.message);
+
+      return { id, userId };
+    },
+
+    onSuccess: ({ userId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["bookmarks", userId],
+      });
+    },
+  });
+};
