@@ -1,13 +1,11 @@
 import {
   useEffect,
   useMemo,
-  //useRef,
   useState,
 } from "react";
 import {
   Bookmark as BookmarkIcon,
   Plus,
-  // Upload,
   Download,
   Search,
   Star,
@@ -15,7 +13,6 @@ import {
   Layers,
   Clock,
   Sparkles,
-  // TrendingUp,
   Heart,
   Github,
   FileText,
@@ -33,8 +30,6 @@ import {
   Eye,
   Calendar,
   Tag as TagIcon,
-  // Sun,
-  // Moon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -101,6 +96,7 @@ import { cn } from "@/lib/utils";
 import { useBookMarks } from "@/api/querysApi";
 import { useAuth } from "@/context/AuthProvider";
 import { useCreateBookmark, useUpdateBookmark } from "@/api/mutationsApi";
+import { useToast } from "@/hooks/use-toast";
 
 type SortOption = "newest" | "oldest" | "most-visited" | "alphabetical";
 
@@ -147,18 +143,7 @@ function Header({
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        {/* <Button
-          variant="outline"
-          size="icon"
-          onClick={theme.toggle}
-          title={theme.isDark ? "Switch to light mode" : "Switch to dark mode"}
-        >
-          {theme.isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-        </Button> */}
-        {/* <Button variant="outline" size="sm" onClick={onImport}>
-          <Upload className="size-4" /> Import
-        </Button> */}
-        <Button variant="outline" size="sm" onClick={onExport}>
+          <Button variant="outline" size="sm" onClick={onExport}>
           <Download className="size-4" /> Export
         </Button>
         <Button size="sm" onClick={onAdd}>
@@ -612,6 +597,7 @@ function BookmarkFormDialog({
 
         <DialogFooter>
           <Button
+            className={"cursor-pointer"}
             disabled={isLoading}
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -619,7 +605,7 @@ function BookmarkFormDialog({
             Cancel
           </Button>
           <Button
-            className="flex items-center justify-center gap-2"
+            className="flex items-center justify-center gap-2 cursor-pointer"
             onClick={submit}
             disabled={isLoading}
           >
@@ -680,17 +666,21 @@ function BookmarkDetailsSheet({
   onOpenChange,
   onEdit,
   onDelete,
+  openBookMark
 }: {
   bookmark: Bookmark | null;
   onOpenChange: (v: boolean) => void;
   onEdit: (b: Bookmark) => void;
   onDelete: (id: string) => void;
+  openBookMark: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>, bookmark: Bookmark) => void;
 }) {
   const open = !!bookmark;
   const TypeIcon =
     bookmark && TYPE_ICON[bookmark.resource_type]
       ? TYPE_ICON[bookmark.resource_type]
       : Globe;
+
+
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -811,14 +801,7 @@ function BookmarkDetailsSheet({
               <div className="flex flex-col gap-2 pb-6 sm:flex-row">
                 <Button
                   className="flex-1"
-                  onClick={() => {
-                    if (typeof window !== "undefined")
-                      window.open(
-                        bookmark.url,
-                        "_blank",
-                        "noopener,noreferrer",
-                      );
-                  }}
+                  onClick={(event) => openBookMark(event, bookmark) }
                 >
                   <ExternalLink className="size-4" /> Open Resource
                 </Button>
@@ -867,6 +850,8 @@ export default function BookMarksManager() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const createBookMarkMutation = useCreateBookmark();
   const updateBookMarkMutation = useUpdateBookmark();
+
+  const { toast } = useToast();
 
   useEffect(() => {
     if (data && data.length > 0) {
@@ -1000,6 +985,10 @@ export default function BookMarksManager() {
       };
 
       await updateBookMarkMutation.mutateAsync({ id, updates });
+      toast({
+        title: "Success",
+        description: "Bookmark updated successfully!",
+      });
       setModalOpen(false);
       setEditing(null);
     } else {
@@ -1014,7 +1003,12 @@ export default function BookMarksManager() {
         notes: data.notes,
         user_id: user?.id ?? "",
       };
+
       await createBookMarkMutation.mutateAsync(newBookmark);
+      toast({
+        title: "Success",
+        description: "Bookmark created successfully!",
+      });
       setModalOpen(false);
       setEditing(null);
     }
@@ -1244,6 +1238,7 @@ export default function BookMarksManager() {
             deleteBookmark(id);
             setDetailsId(null);
           }}
+          openBookMark={openBookMark}
         />
       </div>
     </TooltipProvider>
