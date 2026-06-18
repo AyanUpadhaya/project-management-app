@@ -449,7 +449,7 @@ function BookmarkFormDialog({
   });
 
   const submit = () => {
-    console.log(initial)
+    console.log(initial);
 
     const e: typeof errors = {};
     if (!title.trim()) e.title = "Title is required";
@@ -917,14 +917,14 @@ export default function BookMarksManager() {
     list.sort((a, b) => {
       switch (sort) {
         case "oldest":
-          return +new Date(a.created_at) - +new Date(b.created_at);
+          return +new Date(a.updated_at) - +new Date(b.updated_at);
         case "most-visited":
           return b.visit_count - a.visit_count;
         case "alphabetical":
           return a.title.localeCompare(b.title);
         case "newest":
         default:
-          return +new Date(b.created_at) - +new Date(a.created_at);
+          return +new Date(b.updated_at) - +new Date(a.updated_at);
       }
     });
     return list;
@@ -934,12 +934,22 @@ export default function BookMarksManager() {
     ? (bookmarks.find((b) => b.id === detailsId) ?? null)
     : null;
 
-  const toggleFavorite = (id: string) =>
-    setBookmarks((prev) =>
-      prev.map((b) =>
-        b.id === id ? { ...b, is_favorite: !b.is_favorite } : b,
-      ),
-    );
+  const toggleFavorite = async (id: string) => {
+    const date = new Date();
+
+    const postgresTimestamp = date
+      .toISOString()
+      .replace("T", " ")
+      .replace("Z", "+00");
+    await updateBookMarkMutation.mutateAsync({
+      id,
+      updates: {
+        is_favorite: !bookmarks.find((b) => b.id === id)?.is_favorite,
+        updated_at: postgresTimestamp,
+      },
+    });
+  };
+
   const deleteBookmark = (id: string) =>
     setBookmarks((prev) => prev.filter((b) => b.id !== id));
   const copyUrl = (url: string) => {
@@ -955,10 +965,28 @@ export default function BookMarksManager() {
     setEditing(b);
     setModalOpen(true);
   };
+  const openBookMark = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>,bookmark: Bookmark) => {
+    e.stopPropagation();
+    if (typeof window !== "undefined")
+      window.open(bookmark?.url, "_blank", "noopener,noreferrer");
+    await updateBookMarkMutation.mutateAsync({
+      id:bookmark.id,
+      updates: {
+        visit_count: bookmark.visit_count + 1,
+      },
+    });
+    
+  };
 
   const saveBookmark = async (data: BookmarkFormValues) => {
     if (editing?.id) {
       const id = editing?.id;
+      const date = new Date();
+
+      const postgresTimestamp = date
+        .toISOString()
+        .replace("T", " ")
+        .replace("Z", "+00");
       const updates: Partial<Bookmark> = {
         title: data.title,
         description: data.description,
@@ -968,6 +996,7 @@ export default function BookMarksManager() {
         tags: data.tags,
         is_favorite: data.is_favorite,
         notes: data.notes,
+        updated_at: postgresTimestamp,
       };
 
       await updateBookMarkMutation.mutateAsync({ id, updates });
@@ -1128,15 +1157,7 @@ export default function BookMarksManager() {
                               variant="default"
                               size="sm"
                               className="h-8 flex-1"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (typeof window !== "undefined")
-                                  window.open(
-                                    bookmark?.url,
-                                    "_blank",
-                                    "noopener,noreferrer",
-                                  );
-                              }}
+                              onClick={(e) => openBookMark(e,bookmark)}
                             >
                               <ExternalLink className="size-3.5" /> Open
                             </Button>
